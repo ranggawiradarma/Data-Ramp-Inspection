@@ -301,6 +301,7 @@
         .header-nav-buttons { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
         .rekap-chart-row { display: flex; gap: 0; align-items: stretch; flex-wrap: wrap; }
         .rekap-left-panel { flex: 0 0 auto; min-width: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 24px 8px 8px; border-right: 1.5px solid #e2e8f0; }
+        .rekap-left-panel--centered { flex: 1 1 100% !important; border-right: none !important; padding: 16px 8px !important; }
         .rekap-left-panel-full { flex: 1 1 auto; min-width: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px; }
         .pegawai-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 10px; }
         .filter-inner { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-start; }
@@ -1722,13 +1723,8 @@
         const [errors, setErrors] = useState({});
         const [warn, setWarn] = useState(false);
         const [dupWarning, setDupWarning] = useState("");
-        const [saving, setSaving] = useState(false);
-        const savingRef = useRef(false); // ref guard anti double-tap mobile
         
-        const handleSubmit = async () => {
-            // Blokir jika sedang dalam proses simpan (anti double-tap mobile)
-            if (savingRef.current) return;
-            
+        const handleSubmit = () => {
             const finalTipe = tipe === "Lainnya" ? tipeCus.trim() : tipe;
             const finalMsk = msk === "Lainnya" ? mskCus.trim() : msk;
             const err = {};
@@ -1788,14 +1784,7 @@
             }
             
             setDupWarning("");
-            savingRef.current = true;
-            setSaving(true);
-            try {
-                await onSave(newRecord);
-            } finally {
-                savingRef.current = false;
-                setSaving(false);
-            }
+            onSave(newRecord);
         };
         
         const inputStyle = (err) => ({ fontSize: 13, padding: "7px 10px", borderRadius: 7, border: err ? "2px solid #ef4444" : "1.5px solid #cbd5e1", background: err ? "#fff5f5" : "#fff", width: "100%", boxSizing: "border-box", color: "#1e293b", caretColor: "#000" });
@@ -1868,20 +1857,9 @@
                 )
             ),
             React.createElement("div", { style: { marginTop: 14 } },
-                React.createElement("button", { 
-                    onClick: handleSubmit, 
-                    disabled: saving,
-                    style: { fontSize: 13, padding: "8px 22px", borderRadius: 8, border: "none", background: saving ? "#93c5fd" : "#1d4ed8", color: "#fff", cursor: saving ? "not-allowed" : "pointer", fontWeight: 700, display: "flex", alignItems: "center", gap: 6, opacity: saving ? 0.75 : 1, transition: "all .2s" } 
-                },
-                    saving
-                        ? React.createElement(React.Fragment, null,
-                            React.createElement("div", { style: { width: 14, height: 14, border: "2px solid rgba(255,255,255,.4)", borderTop: "2px solid #fff", borderRadius: "50%", animation: "spin 0.7s linear infinite", flexShrink: 0 } }),
-                            "Menyimpan..."
-                          )
-                        : React.createElement(React.Fragment, null,
-                            React.createElement("svg", { width: 15, height: 15, viewBox: "0 0 24 24", fill: "none", stroke: "#fff", strokeWidth: 2.5 }, React.createElement("path", { d: "M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" }), React.createElement("polyline", { points: "17 21 17 13 7 13 7 21" }), React.createElement("polyline", { points: "7 3 7 8 15 8" })),
-                            "Simpan Data"
-                          )
+                React.createElement("button", { onClick: handleSubmit, style: { fontSize: 13, padding: "8px 22px", borderRadius: 8, border: "none", background: "#1d4ed8", color: "#fff", cursor: "pointer", fontWeight: 700, display: "flex", alignItems: "center", gap: 6 } },
+                    React.createElement("svg", { width: 15, height: 15, viewBox: "0 0 24 24", fill: "none", stroke: "#fff", strokeWidth: 2.5 }, React.createElement("path", { d: "M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" }), React.createElement("polyline", { points: "17 21 17 13 7 13 7 21" }), React.createElement("polyline", { points: "7 3 7 8 15 8" })),
+                    "Simpan Data"
                 )
             )
         );
@@ -2318,15 +2296,11 @@
             }
         }, [pegawaiList]);
 
-        const isAddingRef = useRef(false);
         const addRecord = useCallback(async (rec) => {
-            // Guard: tolak panggilan bersamaan (double-tap / race condition)
-            if (isAddingRef.current) return false;
             if (isDuplicateForPegawai(records, rec.pegawaiId, rec)) {
                 alert("⚠️ Data Tersebut Telah Terunggah");
                 return false;
             }
-            isAddingRef.current = true;
             try {
                 const saved = await fsAddRecord(rec);
                 setRecords(prev => [...prev, saved]);
@@ -2336,8 +2310,6 @@
                 console.error("Gagal simpan record:", e);
                 alert("Gagal menyimpan ke database: " + e.message);
                 return false;
-            } finally {
-                isAddingRef.current = false;
             }
         }, [records]);
         
@@ -2522,7 +2494,7 @@
                             "Data Ramp Inspection " + (rkBulan !== "Semua" ? BULAN[parseInt(rkBulan) - 1] + " " : "") + rkYr + (rkBdr !== "Semua" ? " | " + rkBdr : "")
                         ),
                         React.createElement("div", { className: "rekap-chart-row" },
-                            React.createElement("div", { className: "rekap-left-panel" },
+                            React.createElement("div", { className: rkBulan !== "Semua" ? "rekap-left-panel rekap-left-panel--centered" : "rekap-left-panel" },
                                 React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 18, flexWrap: "wrap" } },
                                     React.createElement(DonutChart, { s: s, mi: mi, ma: ma }),
                                     React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10 } },
