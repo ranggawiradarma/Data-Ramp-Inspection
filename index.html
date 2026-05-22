@@ -8,41 +8,31 @@
     <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.development.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
-    <!-- Firebase SDK (modular via esm shim agar kompatibel dengan script biasa) -->
-    <script>
-        // Inisialisasi Firebase menggunakan dynamic import agar tidak konflik dengan script biasa
-        (async function() {
-            try {
-                const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js");
-                const { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, setDoc, onSnapshot, query, orderBy } = await import("https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js");
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, setDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
 
-                const firebaseConfig = {
-                    apiKey: "AIzaSyC7NSwHJJIyuupryioYTHUpT8vvONzGFHk",
-                    authDomain: "data-ramp-inspection---obu-x.firebaseapp.com",
-                    projectId: "data-ramp-inspection---obu-x",
-                    storageBucket: "data-ramp-inspection---obu-x.firebasestorage.app",
-                    messagingSenderId: "250304535649",
-                    appId: "1:250304535649:web:fa24f9a62a08d768759e20",
-                    measurementId: "G-3P1QR3WWPM"
-                };
+        const firebaseConfig = {
+            apiKey: "AIzaSyC7NSwHJJIyuupryioYTHUpT8vvONzGFHk",
+            authDomain: "data-ramp-inspection---obu-x.firebaseapp.com",
+            projectId: "data-ramp-inspection---obu-x",
+            storageBucket: "data-ramp-inspection---obu-x.firebasestorage.app",
+            messagingSenderId: "250304535649",
+            appId: "1:250304535649:web:fa24f9a62a08d768759e20",
+            measurementId: "G-3P1QR3WWPM"
+        };
 
-                const app = initializeApp(firebaseConfig);
-                const db = getFirestore(app);
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-                // Expose ke window
-                window.__db = db;
-                window.__fsHelpers = { collection, getDocs, addDoc, deleteDoc, doc, setDoc, onSnapshot, query, orderBy };
+        // Expose Firestore helpers ke window agar bisa dipakai oleh kode React di bawah
+        window.__db = db;
+        window.__fsHelpers = { collection, getDocs, addDoc, deleteDoc, doc, setDoc, onSnapshot, query, orderBy };
 
-                // Signal Firebase siap
-                window.__firebaseReady = true;
-                window.dispatchEvent(new Event("firebaseReady"));
-                console.log("✅ Firebase berhasil terhubung!");
-            } catch(e) {
-                console.error("❌ Firebase gagal inisialisasi:", e);
-                window.__firebaseReady = false;
-                window.dispatchEvent(new Event("firebaseReady"));
-            }
-        })();
+        // Signal bahwa Firebase sudah siap
+        window.__firebaseReady = true;
+        window.dispatchEvent(new Event("firebaseReady"));
     </script>
     <style>
         * { box-sizing: border-box; }
@@ -302,6 +292,35 @@
         .avi-radar-mid-upleft, .avi-radar-mid-upleft2,
         .avi-radar-topleft-down, .avi-radar-topleft-down2,
         .avi-signal { opacity: 0; }
+
+        /* ─── MOBILE RESPONSIVE ─── */
+        .stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 14px; }
+        .header-inner { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; max-width: 1100px; margin: 0 auto; padding: 12px 20px 14px; }
+        .header-sep { width: 1px; height: 44px; background: rgba(255,255,255,.25); flex-shrink: 0; }
+        .header-nav-area { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+        .header-nav-buttons { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+        .rekap-chart-row { display: flex; gap: 0; align-items: stretch; flex-wrap: wrap; }
+        .rekap-left-panel { flex: 0 0 auto; min-width: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 24px 8px 8px; border-right: 1.5px solid #e2e8f0; }
+        .rekap-left-panel-full { flex: 1 1 auto; min-width: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px; }
+        .pegawai-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 10px; }
+        .filter-inner { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-start; }
+        .main-pad { padding: 16px 20px 40px; max-width: 1100px; margin: 0 auto; }
+
+        @media (max-width: 600px) {
+            .main-pad { padding: 10px 10px 40px !important; }
+            .stat-grid { grid-template-columns: repeat(2,1fr) !important; gap: 8px !important; }
+            .header-inner { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; padding: 10px 14px 12px !important; }
+            .header-sep { display: none !important; }
+            .header-nav-area { width: 100% !important; flex-direction: row !important; align-items: center !important; justify-content: space-between !important; gap: 4px !important; }
+            .header-nav-buttons { justify-content: flex-start !important; gap: 4px !important; }
+            .header-nav-buttons button { font-size: 10px !important; padding: 4px 8px !important; }
+            .header-connected { font-size: 9px !important; padding: 2px 7px !important; }
+            .rekap-chart-row { flex-direction: column !important; }
+            .rekap-left-panel { min-width: 0 !important; width: 100% !important; border-right: none !important; border-bottom: 1.5px solid #e2e8f0 !important; padding: 12px 8px !important; }
+            .rekap-left-panel-full { min-width: 0 !important; width: 100% !important; padding: 12px 8px !important; }
+            .pegawai-grid { grid-template-columns: repeat(auto-fill,minmax(150px,1fr)) !important; gap: 8px !important; }
+            .filter-inner { gap: 5px !important; }
+        }
     </style>
 </head>
 <body>
@@ -339,8 +358,9 @@
         {id:22, nama:"Zaenuri Ihsan",              jabatan:"Pengawas Penerbangan",                                         bidang:"Kelaikudaraan"},
         {id:26, nama:"Rayhan Aqhar Fayyadh",       jabatan:"Pengawas Penerbangan",                                         bidang:"Kelaikudaraan"},
     ];
-    const BANDARA = ["Bandara Mopah - Merauke","Bandara Sentani - Jayapura","Bandara Mozes Kilangin - Timika","Bandara Tanah Merah"];
-    const TIPE    = ["ATR 42","ATR 72","Boeing 737-800","Boeing 737-900ER","Cessna 208","DHC-6 Twin Otter","Pilatus PC-6","Fokker 100","Lainnya"];
+    const BANDARA = ["Bandara Mopah - Merauke","Bandara Mozes Kilangin - Timika","Bandara Sentani - Jayapura","Bandara Tanah Merah","Bandara Wamena"];
+    const TIPE    = ["A320-214","A320 232","ATR 42-300","ATR 42-500","ATR 72","ARJ 21-700","B737-300","B-737-500","B737-MAX 8","B737-800","B737-900ER","Bell 206","C208B","C208","DHC 6-400","Kodiak 100","LET L-410","PC12","PC6","P-750 XTOL","Lainnya"];
+    const MASKAPAI = ["Airfast","Alda Trans Papua","Asian One","Aviasi Puncak Papua","Batik Air","BBN Airlines","Black Stone","Citilink","Deraya","Dimonim Air","Elang Nusantara","Garuda Indonesia","Gunung Selatan Air","Ikaros","Intan Angkasa","Jayawijaya Dirgantara","Lion Air","MAF","MY Indo","Nasional Global Aviasi","PT. AMA","Reven Global Airtransport","SAM Air","Sayap Garuda Indah","Smart Aviation","Sriwijaya Air","Super Air Jet","Susi Air","Tariku","Trans Nusa","Tri-MG","Trigana Air","Wings Air","Yajasi","Lainnya"];
     const BULAN   = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
     const HUKUM   = [
         {kode:"UU No. 1/2009",    judul:"Undang-Undang Nomor 1 Tahun 2009 tentang Penerbangan"},
@@ -441,7 +461,8 @@
     });
     
     const getInspectionKey = (r) => {
-        return `${r.maskapai}|${r.registrasi}|${r.tipePesawat}|${r.flightNumber}|${r.bandara}|${r.tanggal}|${r.status}`.toLowerCase().trim();
+        // Key untuk cek duplikat per-pegawai (semua field termasuk serial number dan route)
+        return `${r.maskapai}|${r.registrasi}|${r.tipePesawat}|${r.aircraftSerialNumber}|${r.bandara}|${r.tanggal}|${r.status}`.toLowerCase().trim();
     };
     
     const isDuplicateForPegawai = (records, pegawaiId, newRecord) => {
@@ -449,7 +470,16 @@
         return records.some(r => r.pegawaiId === pegawaiId && getInspectionKey(r) === newKey);
     };
     
-    const dupKey = r => [r.maskapai, r.tanggal, r.flightNumber, r.registrasi, r.bandara, r.tipePesawat, r.status].join("|").toLowerCase().trim();
+    // dupKey global: serial number, bandara, maskapai, tanggal, registrasi, tipe, status (kategori saja — bukan detail temuan)
+    const dupKey = r => [
+        r.aircraftSerialNumber || "",
+        r.bandara,
+        r.maskapai,
+        r.tanggal,
+        r.registrasi,
+        r.tipePesawat,
+        r.status   // "Satisfactory" | "Minor Finding" | "Major Finding"
+    ].join("|").toLowerCase().trim();
     const dedupPerPeg = (arr) => { const seen = {}; return arr.filter(r => { const k = r.pegawaiId + "|" + dupKey(r); if (seen[k]) return false; seen[k] = 1; return true; }); };
     const dedupGlobal = (arr) => { const seen = {}; return arr.filter(r => { const k = dupKey(r); if (seen[k]) return false; seen[k] = 1; return true; }); };
 
@@ -1088,6 +1118,186 @@
         doc.setGState(doc.GState({ opacity: 1 }));
     };
 
+    // ==============================================================
+    // HELPER: Halaman terakhir — tabel data per maskapai lalu bulan
+    // ==============================================================
+    const drawMaskapaiPages = (doc, recs, pageWidth, pageHeight, hdrH, periodeText) => {
+        if (!recs || recs.length === 0) return;
+
+        const ML = 10, MR = 10;
+        const colW = {
+            no:       7,
+            tgl:      20,
+            tipe:     26,
+            serial:   24,
+            bandara:  36,
+            routeFrom:13,
+            flFrom:   22,
+            routeTo:  13,
+            flTo:     22,
+            status:   24,
+        };
+        const totalColW = Object.values(colW).reduce((a,b)=>a+b,0);
+        const scale = (pageWidth - ML - MR) / totalColW;
+        const cw = {};
+        Object.keys(colW).forEach(k => { cw[k] = colW[k] * scale; });
+
+        const colKeys  = ["no","tgl","tipe","serial","bandara","routeFrom","flFrom","routeTo","flTo","status"];
+        // Header 1 baris saja — tidak ada \n
+        const headers  = ["No", "Tanggal", "Tipe Pesawat", "Serial No.", "Bandara", "Route From", "Flt No. From", "Route To", "Flt No. To", "Hasil Inspeksi"];
+        const rowH  = 7;
+        const hdrH2 = 8;
+
+        // Helper: gambar border grid untuk satu baris
+        const drawRowBorder = (y, h) => {
+            doc.setDrawColor(203, 213, 225);
+            doc.setLineWidth(0.25);
+            // Garis luar kiri-kanan-atas-bawah
+            doc.rect(ML, y, pageWidth - ML - MR, h);
+            // Garis vertikal antar kolom
+            let lx = ML;
+            colKeys.forEach((k, i) => {
+                lx += cw[k];
+                if (i < colKeys.length - 1) doc.line(lx, y, lx, y + h);
+            });
+        };
+
+        // Helper: gambar header tabel
+        const drawTableHeader = (yPos) => {
+            // Background biru penuh
+            doc.setFillColor(29, 78, 216);
+            doc.rect(ML, yPos, pageWidth - ML - MR, hdrH2, "F");
+
+            // Garis vertikal putih antar kolom di header
+            doc.setDrawColor(255, 255, 255);
+            doc.setLineWidth(0.3);
+            let lx = ML;
+            colKeys.forEach((k, i) => {
+                lx += cw[k];
+                if (i < colKeys.length - 1) doc.line(lx, yPos, lx, yPos + hdrH2);
+            });
+            // Border luar header
+            doc.setDrawColor(15, 52, 150);
+            doc.setLineWidth(0.4);
+            doc.rect(ML, yPos, pageWidth - ML - MR, hdrH2);
+
+            // Teks header — center horizontal & vertical sempurna per kolom
+            // jsPDF: koordinat Y = baseline teks. Tinggi caps ≈ fontSize(pt) * 0.352 mm/pt * 0.72 (cap-height ratio)
+            doc.setFontSize(6.2);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(255, 255, 255);
+            const capHeightMm = 6.2 * 0.352 * 0.72; // ~1.57 mm
+            const textY = yPos + (hdrH2 / 2) + (capHeightMm / 2);
+            let cx = ML;
+            headers.forEach((h, i) => {
+                const key = colKeys[i];
+                doc.text(h, cx + cw[key] / 2, textY, { align: "center" });
+                cx += cw[key];
+            });
+        };
+
+        // Kumpulkan maskapai unik, urutkan abjad
+        const maskapaiList = [...new Set(recs.map(r => r.maskapai))].sort((a,b)=>a.localeCompare(b));
+
+        maskapaiList.forEach(maskapai => {
+            const mRecs = recs
+                .filter(r => r.maskapai === maskapai)
+                .sort((a,b) => new Date(a.tanggal+"T00:00:00") - new Date(b.tanggal+"T00:00:00"));
+            if (mRecs.length === 0) return;
+
+            doc.addPage();
+            drawPDFHeader(doc, pageWidth, pageHeight, periodeText);
+
+            let yPos = hdrH + 8;
+
+            // Judul maskapai
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(29, 78, 216);
+            doc.text(maskapai.toUpperCase(), pageWidth / 2, yPos + 4, { align: "center" });
+            doc.setDrawColor(29, 78, 216);
+            doc.setLineWidth(0.5);
+            doc.line(ML, yPos + 7, pageWidth - MR, yPos + 7);
+            yPos += 12;
+
+            drawTableHeader(yPos);
+            yPos += hdrH2;
+
+            mRecs.forEach((r, idx) => {
+                // Halaman baru jika perlu
+                if (yPos + rowH > pageHeight - 14) {
+                    doc.addPage();
+                    drawPDFHeader(doc, pageWidth, pageHeight, periodeText);
+                    yPos = hdrH + 8;
+
+                    doc.setFontSize(10);
+                    doc.setFont("helvetica", "bold");
+                    doc.setTextColor(29, 78, 216);
+                    doc.text(maskapai.toUpperCase() + " (lanjutan)", pageWidth / 2, yPos + 4, { align: "center" });
+                    doc.setDrawColor(29, 78, 216);
+                    doc.setLineWidth(0.5);
+                    doc.line(ML, yPos + 7, pageWidth - MR, yPos + 7);
+                    yPos += 12;
+
+                    drawTableHeader(yPos);
+                    yPos += hdrH2;
+                }
+
+                // Background baris alternating
+                const isEven = idx % 2 === 0;
+                doc.setFillColor(isEven ? 248 : 255, isEven ? 250 : 255, isEven ? 252 : 255);
+                doc.rect(ML, yPos, pageWidth - ML - MR, rowH, "F");
+
+                // Status warna
+                let statusColor = [22, 163, 74];
+                let statusBg    = [220, 252, 231];
+                if (r.status === "Minor Finding") { statusColor = [234, 88, 12]; statusBg = [255, 237, 213]; }
+                if (r.status === "Major Finding") { statusColor = [220, 38, 38]; statusBg = [254, 226, 226]; }
+
+                const values = [
+                    String(idx + 1),
+                    r.tanggal || "-",
+                    r.tipePesawat || "-",
+                    r.aircraftSerialNumber || "-",
+                    r.bandara || "-",
+                    r.routeFrom || "-",
+                    r.flightNumberFrom || "-",
+                    r.routeTo || "-",
+                    r.flightNumberTo || "-",
+                    r.status || "-",
+                ];
+
+                let cx = ML;
+                values.forEach((val, i) => {
+                    const key = colKeys[i];
+                    const isStatus = key === "status";
+                    const textColor = isStatus ? statusColor : [30, 41, 59];
+                    const isBold = (key === "no" || key === "status" || key === "routeFrom" || key === "routeTo");
+
+                    if (isStatus) {
+                        doc.setFillColor(statusBg[0], statusBg[1], statusBg[2]);
+                        doc.roundedRect(cx + 1, yPos + 1, cw[key] - 2, rowH - 2, 1.5, 1.5, "F");
+                    }
+
+                    doc.setFontSize(6.2);
+                    doc.setFont("helvetica", isBold ? "bold" : "normal");
+                    doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+
+                    let displayVal = val;
+                    while (displayVal.length > 1 && doc.getTextWidth(displayVal) > cw[key] - 2) {
+                        displayVal = displayVal.slice(0, -1);
+                    }
+                    doc.text(displayVal, cx + cw[key] / 2, yPos + rowH / 2 + 1.5, { align: "center" });
+                    cx += cw[key];
+                });
+
+                // Border grid baris
+                drawRowBorder(yPos, rowH);
+                yPos += rowH;
+            });
+        });
+    };
+
     // PDF Generator untuk Rekapitulasi (diperbaiki)
     const generateRekapPDF = (recs, bulan, tahun, bandaraFilter, monthlyData) => {
         return new Promise((resolve, reject) => {
@@ -1237,6 +1447,9 @@
                     drawChartLegend(doc, startChartXR + donutSzR + 12, yPos + 6, bandaraS, bandaraMi, bandaraMa, bandaraTotal);
                 }
                 
+                // Halaman terakhir: tabel data per maskapai
+                drawMaskapaiPages(doc, recs, pageWidth, pageHeight, hdrH, periodeText);
+
                 // Tambahkan footer ke setiap halaman
                 const pageCount = doc.internal.getNumberOfPages();
                 for (let i = 1; i <= pageCount; i++) {
@@ -1457,6 +1670,9 @@
                     drawChartLegend(doc, legendX, yPos + 6, bandaraS, bandaraMi, bandaraMa, bandaraTotal);
                 }
                 
+                // Halaman terakhir: tabel data per maskapai
+                drawMaskapaiPages(doc, recs, pageWidth, pageHeight, hdrH, periodeText);
+
                 // Footer
                 const pageCount = doc.internal.getNumberOfPages();
                 for (let i = 1; i <= pageCount; i++) {
@@ -1487,42 +1703,78 @@
         const [spt, setSpt] = useState("");
         const [tgl, setTgl] = useState("");
         const [msk, setMsk] = useState("");
+        const [mskCus, setMskCus] = useState("");
         const [flt, setFlt] = useState("");
         const [reg, setReg] = useState("");
         const [bdr, setBdr] = useState("");
         const [tipe, setTipe] = useState("");
         const [tipeCus, setTipeCus] = useState("");
+        const [routeFrom, setRouteFrom] = useState("");
+        const [flightFrom, setFlightFrom] = useState("");
+        const [routeTo, setRouteTo] = useState("");
+        const [flightTo, setFlightTo] = useState("");
+        const [serialNum, setSerialNum] = useState("");
         const [stat, setStat] = useState("Satisfactory");
+        const [statExtra, setStatExtra] = useState(""); // "" | "Minor Finding" | "Major Finding" — untuk kombinasi
         const [temuan, setTemuan] = useState("");
+        const [temuanExtra, setTemuanExtra] = useState(""); // temuan untuk statExtra
         const [desk, setDesk] = useState("");
         const [errors, setErrors] = useState({});
         const [warn, setWarn] = useState(false);
         const [dupWarning, setDupWarning] = useState("");
+        const [saving, setSaving] = useState(false);
+        const savingRef = useRef(false); // ref guard anti double-tap mobile
         
-        const handleSubmit = () => {
+        const handleSubmit = async () => {
+            // Blokir jika sedang dalam proses simpan (anti double-tap mobile)
+            if (savingRef.current) return;
+            
             const finalTipe = tipe === "Lainnya" ? tipeCus.trim() : tipe;
+            const finalMsk = msk === "Lainnya" ? mskCus.trim() : msk;
             const err = {};
             if (!tgl) err.tgl = 1;
-            if (!msk.trim()) err.msk = 1;
-            if (!flt.trim()) err.flt = 1;
+            if (!finalMsk) err.msk = 1;
             if (!reg.trim()) err.reg = 1;
             if (!bdr) err.bdr = 1;
             if (!finalTipe) err.tipe = 1;
+            if (!routeFrom.trim()) err.routeFrom = 1;
+            if (!flightFrom.trim()) err.flightFrom = 1;
+            if (!routeTo.trim()) err.routeTo = 1;
+            if (!flightTo.trim()) err.flightTo = 1;
+            if (!serialNum.trim()) err.serialNum = 1;
             if (!desk.trim()) err.desk = 1;
             if ((stat === "Minor Finding" || stat === "Major Finding") && !temuan.trim()) err.temuan = 1;
+            if (statExtra && !temuanExtra.trim()) err.temuanExtra = 1;
             if (Object.keys(err).length) { setErrors(err); setWarn(true); return; }
+            
+            // Tentukan status final dan gabungan temuan
+            let finalStat = stat;
+            let finalTemuanList = stat !== "Satisfactory" ? temuan.split("\n").filter(l => l.trim()) : [];
+            let finalTemuan = temuan;
+            if (statExtra) {
+                // Jika ada dua status, prioritas: Major > Minor
+                finalStat = (stat === "Major Finding" || statExtra === "Major Finding") ? "Major Finding" : "Minor Finding";
+                const extraLines = temuanExtra.split("\n").filter(l => l.trim());
+                finalTemuanList = [...finalTemuanList, ...extraLines];
+                finalTemuan = temuan + (temuanExtra ? "\n" + temuanExtra : "");
+            }
             
             const newRecord = {
                 nomorSPT: spt.trim(),
                 tanggal: tgl,
                 bandara: bdr,
-                maskapai: msk.trim(),
-                flightNumber: flt.trim(),
+                maskapai: finalMsk,
+                flightNumber: "",
+                routeFrom: routeFrom.trim(),
+                flightNumberFrom: flightFrom.trim(),
+                routeTo: routeTo.trim(),
+                flightNumberTo: flightTo.trim(),
                 registrasi: reg.trim(),
+                aircraftSerialNumber: serialNum.trim(),
                 tipePesawat: finalTipe,
-                status: stat,
-                temuan: temuan,
-                temuanList: stat !== "Satisfactory" ? temuan.split("\n").filter(l => l.trim()) : [],
+                status: finalStat,
+                temuan: finalTemuan,
+                temuanList: finalTemuanList,
                 deskripsi: desk.trim(),
                 pegawaiId: selPeg.id,
                 ts: Date.now()
@@ -1536,7 +1788,14 @@
             }
             
             setDupWarning("");
-            onSave(newRecord);
+            savingRef.current = true;
+            setSaving(true);
+            try {
+                await onSave(newRecord);
+            } finally {
+                savingRef.current = false;
+                setSaving(false);
+            }
         };
         
         const inputStyle = (err) => ({ fontSize: 13, padding: "7px 10px", borderRadius: 7, border: err ? "2px solid #ef4444" : "1.5px solid #cbd5e1", background: err ? "#fff5f5" : "#fff", width: "100%", boxSizing: "border-box", color: "#1e293b", caretColor: "#000" });
@@ -1551,16 +1810,56 @@
             React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 18px" } },
                 React.createElement("div", null, React.createElement("div", { style: { fontSize: 11, color: "#64748b", marginBottom: 4, fontWeight: 600 } }, "Nomor SPT"), React.createElement("input", { value: spt, onChange: e => setSpt(e.target.value), placeholder: "SPT-001/WIL10/2025", style: inputStyle(false) })),
                 React.createElement("div", null, React.createElement("div", { style: { fontSize: 11, color: "#64748b", marginBottom: 4, fontWeight: 600 } }, "Tanggal ", React.createElement("span", { style: { color: "#ef4444" } }, "*")), React.createElement(DP, { value: tgl, onChange: setTgl, hasErr: !!errors.tgl }), errors.tgl && React.createElement("div", { style: { color: "#ef4444", fontSize: 10, marginTop: 3 } }, "Wajib dipilih")),
-                React.createElement("div", null, React.createElement("div", { style: { fontSize: 11, color: "#64748b", marginBottom: 4, fontWeight: 600 } }, "Maskapai ", React.createElement("span", { style: { color: "#ef4444" } }, "*")), React.createElement("input", { value: msk, onChange: e => setMsk(e.target.value), placeholder: "Garuda Indonesia", style: inputStyle(errors.msk) }), errors.msk && React.createElement("div", { style: { color: "#ef4444", fontSize: 10, marginTop: 3 } }, "Wajib diisi")),
-                React.createElement("div", null, React.createElement("div", { style: { fontSize: 11, color: "#64748b", marginBottom: 4, fontWeight: 600 } }, "Flight Number ", React.createElement("span", { style: { color: "#ef4444" } }, "*")), React.createElement("input", { value: flt, onChange: e => setFlt(e.target.value), placeholder: "GA-401", style: inputStyle(errors.flt) }), errors.flt && React.createElement("div", { style: { color: "#ef4444", fontSize: 10, marginTop: 3 } }, "Wajib diisi")),
+                React.createElement("div", null, React.createElement("div", { style: { fontSize: 11, color: "#64748b", marginBottom: 4, fontWeight: 600 } }, "Maskapai ", React.createElement("span", { style: { color: "#ef4444" } }, "*")), React.createElement(DD, { options: [{ v: "", l: "-- Pilih Maskapai --" }, ...MASKAPAI.map(m => ({ v: m, l: m }))], value: msk, onChange: v => { setMsk(v); if (v !== "Lainnya") setMskCus(""); }, placeholder: "-- Pilih Maskapai --", width: "100%" }), msk === "Lainnya" && React.createElement("input", { value: mskCus, onChange: e => setMskCus(e.target.value), placeholder: "Ketik nama maskapai...", style: { ...inputStyle(false), marginTop: 6 } }), errors.msk && React.createElement("div", { style: { color: "#ef4444", fontSize: 10, marginTop: 3 } }, "Wajib dipilih")),
                 React.createElement("div", null, React.createElement("div", { style: { fontSize: 11, color: "#64748b", marginBottom: 4, fontWeight: 600 } }, "Registrasi ", React.createElement("span", { style: { color: "#ef4444" } }, "*")), React.createElement("input", { value: reg, onChange: e => setReg(e.target.value), placeholder: "PK-GFA", style: inputStyle(errors.reg) }), errors.reg && React.createElement("div", { style: { color: "#ef4444", fontSize: 10, marginTop: 3 } }, "Wajib diisi")),
+                React.createElement("div", null, React.createElement("div", { style: { fontSize: 11, color: "#64748b", marginBottom: 4, fontWeight: 600 } }, "Route From ", React.createElement("span", { style: { color: "#ef4444" } }, "*")), React.createElement("input", { value: routeFrom, onChange: e => setRouteFrom(e.target.value), placeholder: "Contoh: MKQ", style: inputStyle(errors.routeFrom) }), errors.routeFrom && React.createElement("div", { style: { color: "#ef4444", fontSize: 10, marginTop: 3 } }, "Wajib diisi")),
+                React.createElement("div", null, React.createElement("div", { style: { fontSize: 11, color: "#64748b", marginBottom: 4, fontWeight: 600 } }, "Flight Number From ", React.createElement("span", { style: { color: "#ef4444" } }, "*")), React.createElement("input", { value: flightFrom, onChange: e => setFlightFrom(e.target.value), placeholder: "Contoh: GA-400", style: inputStyle(errors.flightFrom) }), errors.flightFrom && React.createElement("div", { style: { color: "#ef4444", fontSize: 10, marginTop: 3 } }, "Wajib diisi")),
+                React.createElement("div", null, React.createElement("div", { style: { fontSize: 11, color: "#64748b", marginBottom: 4, fontWeight: 600 } }, "Route To ", React.createElement("span", { style: { color: "#ef4444" } }, "*")), React.createElement("input", { value: routeTo, onChange: e => setRouteTo(e.target.value), placeholder: "Contoh: DJJ", style: inputStyle(errors.routeTo) }), errors.routeTo && React.createElement("div", { style: { color: "#ef4444", fontSize: 10, marginTop: 3 } }, "Wajib diisi")),
+                React.createElement("div", null, React.createElement("div", { style: { fontSize: 11, color: "#64748b", marginBottom: 4, fontWeight: 600 } }, "Flight Number To ", React.createElement("span", { style: { color: "#ef4444" } }, "*")), React.createElement("input", { value: flightTo, onChange: e => setFlightTo(e.target.value), placeholder: "Contoh: GA-402", style: inputStyle(errors.flightTo) }), errors.flightTo && React.createElement("div", { style: { color: "#ef4444", fontSize: 10, marginTop: 3 } }, "Wajib diisi")),
                 React.createElement("div", null, React.createElement("div", { style: { fontSize: 11, color: "#64748b", marginBottom: 4, fontWeight: 600 } }, "Bandara ", React.createElement("span", { style: { color: "#ef4444" } }, "*")), React.createElement(DD, { options: [{ v: "", l: "-- Pilih Bandara --" }, ...BANDARA.map(b => ({ v: b, l: b }))], value: bdr, onChange: setBdr, placeholder: "-- Pilih Bandara --", width: "100%" }), errors.bdr && React.createElement("div", { style: { color: "#ef4444", fontSize: 10, marginTop: 3 } }, "Wajib dipilih")),
                 React.createElement("div", null, React.createElement("div", { style: { fontSize: 11, color: "#64748b", marginBottom: 4, fontWeight: 600 } }, "Tipe Pesawat ", React.createElement("span", { style: { color: "#ef4444" } }, "*")), React.createElement(DD, { options: [{ v: "", l: "-- Pilih Tipe --" }, ...TIPE.map(t => ({ v: t, l: t }))], value: tipe, onChange: v => { setTipe(v); if (v !== "Lainnya") setTipeCus(""); }, placeholder: "-- Pilih Tipe --", width: "100%" }), tipe === "Lainnya" && React.createElement("input", { value: tipeCus, onChange: e => setTipeCus(e.target.value), placeholder: "Ketik tipe pesawat...", style: { ...inputStyle(false), marginTop: 6 } }), errors.tipe && React.createElement("div", { style: { color: "#ef4444", fontSize: 10, marginTop: 3 } }, "Wajib dipilih/diisi")),
-                React.createElement("div", null, React.createElement("div", { style: { fontSize: 11, color: "#64748b", marginBottom: 4, fontWeight: 600 } }, "Hasil Inspeksi ", React.createElement("span", { style: { color: "#ef4444" } }, "*")), React.createElement(DD, { options: [{ v: "Satisfactory", l: "Satisfactory" }, { v: "Minor Finding", l: "Minor Finding" }, { v: "Major Finding", l: "Major Finding" }], value: stat, onChange: setStat, width: "100%" })),
+                React.createElement("div", null, React.createElement("div", { style: { fontSize: 11, color: "#64748b", marginBottom: 4, fontWeight: 600 } }, "Aircraft Serial Number ", React.createElement("span", { style: { color: "#ef4444" } }, "*")), React.createElement("input", { value: serialNum, onChange: e => setSerialNum(e.target.value), placeholder: "Contoh: 12345", style: inputStyle(errors.serialNum) }), errors.serialNum && React.createElement("div", { style: { color: "#ef4444", fontSize: 10, marginTop: 3 } }, "Wajib diisi")),
+                React.createElement("div", { style: { alignSelf: "start" } }, 
+                    React.createElement("div", { style: { fontSize: 11, color: "#64748b", marginBottom: 4, fontWeight: 600 } }, "Hasil Inspeksi ", React.createElement("span", { style: { color: "#ef4444" } }, "*")), 
+                    React.createElement("div", { style: { position: "relative", display: "flex", alignItems: "stretch" } },
+                        React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+                            React.createElement(DD, { options: [{ v: "Satisfactory", l: "Satisfactory" }, { v: "Minor Finding", l: "Minor Finding" }, { v: "Major Finding", l: "Major Finding" }], value: stat, onChange: v => { setStat(v); setStatExtra(""); setTemuanExtra(""); }, width: "100%" })
+                        ),
+                        (stat === "Minor Finding" || stat === "Major Finding") && !statExtra &&
+                            React.createElement("button", { 
+                                type: "button",
+                                title: "Tambah temuan jenis lain",
+                                onClick: () => setStatExtra(stat === "Minor Finding" ? "Major Finding" : "Minor Finding"),
+                                style: { flexShrink: 0, marginLeft: 6, width: 34, borderRadius: 8, border: "1.5px solid #1d4ed8", background: "#eff6ff", color: "#1d4ed8", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }
+                            }, React.createElement("svg", { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "#1d4ed8", strokeWidth: 2.5, strokeLinecap: "round" },
+                                React.createElement("line", { x1: 12, y1: 4, x2: 12, y2: 20 }),
+                                React.createElement("line", { x1: 4, y1: 12, x2: 20, y2: 12 })
+                            ))
+                    )
+                ),
                 (stat === "Minor Finding" || stat === "Major Finding") && React.createElement("div", { style: { gridColumn: "1/-1" } },
-                    React.createElement("div", { style: { fontSize: 11, color: "#64748b", marginBottom: 4, fontWeight: 600 } }, "Detail Temuan ", React.createElement("span", { style: { color: "#ef4444" } }, "*")),
+                    React.createElement("div", { style: { fontSize: 11, color: "#64748b", marginBottom: 4, fontWeight: 600 } }, 
+                        "Detail Temuan — ", React.createElement("span", { style: { color: stat === "Major Finding" ? "#ef4444" : "#f97316", fontWeight: 700 } }, stat),
+                        " ", React.createElement("span", { style: { color: "#ef4444" } }, "*")
+                    ),
                     React.createElement("textarea", { value: temuan, onChange: e => setTemuan(e.target.value), placeholder: "Tulis setiap temuan di baris terpisah...", style: { ...inputStyle(errors.temuan), resize: "vertical", minHeight: 65 } }),
                     errors.temuan && React.createElement("div", { style: { color: "#ef4444", fontSize: 10, marginTop: 3 } }, "Wajib diisi")
+                ),
+                statExtra && React.createElement("div", { style: { gridColumn: "1/-1" } },
+                    React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 4 } },
+                        React.createElement("div", { style: { fontSize: 11, color: "#64748b", fontWeight: 600 } }, 
+                            "Detail Temuan — ", React.createElement("span", { style: { color: statExtra === "Major Finding" ? "#ef4444" : "#f97316", fontWeight: 700 } }, statExtra),
+                            " ", React.createElement("span", { style: { color: "#ef4444" } }, "*")
+                        ),
+                        React.createElement("button", {
+                            type: "button",
+                            title: "Hapus temuan tambahan",
+                            onClick: () => { setStatExtra(""); setTemuanExtra(""); },
+                            style: { marginLeft: "auto", fontSize: 11, padding: "2px 10px", borderRadius: 6, border: "1.5px solid #ef4444", background: "#fef2f2", color: "#dc2626", cursor: "pointer", fontWeight: 700 }
+                        }, "✕ Hapus")
+                    ),
+                    React.createElement("textarea", { value: temuanExtra, onChange: e => setTemuanExtra(e.target.value), placeholder: "Tulis setiap temuan di baris terpisah...", style: { ...inputStyle(errors.temuanExtra), resize: "vertical", minHeight: 65 } }),
+                    errors.temuanExtra && React.createElement("div", { style: { color: "#ef4444", fontSize: 10, marginTop: 3 } }, "Wajib diisi")
                 ),
                 React.createElement("div", { style: { gridColumn: "1/-1" } },
                     React.createElement("div", { style: { fontSize: 11, color: "#64748b", marginBottom: 4, fontWeight: 600 } }, "Deskripsi Pekerjaan ", React.createElement("span", { style: { color: "#ef4444" } }, "*")),
@@ -1569,9 +1868,20 @@
                 )
             ),
             React.createElement("div", { style: { marginTop: 14 } },
-                React.createElement("button", { onClick: handleSubmit, style: { fontSize: 13, padding: "8px 22px", borderRadius: 8, border: "none", background: "#1d4ed8", color: "#fff", cursor: "pointer", fontWeight: 700, display: "flex", alignItems: "center", gap: 6 } },
-                    React.createElement("svg", { width: 15, height: 15, viewBox: "0 0 24 24", fill: "none", stroke: "#fff", strokeWidth: 2.5 }, React.createElement("path", { d: "M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" }), React.createElement("polyline", { points: "17 21 17 13 7 13 7 21" }), React.createElement("polyline", { points: "7 3 7 8 15 8" })),
-                    "Simpan Data"
+                React.createElement("button", { 
+                    onClick: handleSubmit, 
+                    disabled: saving,
+                    style: { fontSize: 13, padding: "8px 22px", borderRadius: 8, border: "none", background: saving ? "#93c5fd" : "#1d4ed8", color: "#fff", cursor: saving ? "not-allowed" : "pointer", fontWeight: 700, display: "flex", alignItems: "center", gap: 6, opacity: saving ? 0.75 : 1, transition: "all .2s" } 
+                },
+                    saving
+                        ? React.createElement(React.Fragment, null,
+                            React.createElement("div", { style: { width: 14, height: 14, border: "2px solid rgba(255,255,255,.4)", borderTop: "2px solid #fff", borderRadius: "50%", animation: "spin 0.7s linear infinite", flexShrink: 0 } }),
+                            "Menyimpan..."
+                          )
+                        : React.createElement(React.Fragment, null,
+                            React.createElement("svg", { width: 15, height: 15, viewBox: "0 0 24 24", fill: "none", stroke: "#fff", strokeWidth: 2.5 }, React.createElement("path", { d: "M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" }), React.createElement("polyline", { points: "17 21 17 13 7 13 7 21" }), React.createElement("polyline", { points: "7 3 7 8 15 8" })),
+                            "Simpan Data"
+                          )
                 )
             )
         );
@@ -1885,11 +2195,11 @@
             React.createElement("div", { className: "avi-dot" }),
             React.createElement("div", { className: "avi-dot" }),
             React.createElement("div", { className: "avi-dot" }),
-            React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", maxWidth: 1100, margin: "0 auto", padding: "12px 20px 14px" } },
+            React.createElement("div", { className: "header-inner" },
                 React.createElement("div", { style: { width: 54, height: 54, borderRadius: "50%", background: "rgba(255,255,255,.15)", border: "2px solid rgba(255,255,255,.35)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden", backdropFilter: "blur(4px)" } },
                     React.createElement("img", { src: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/7QCEUGhvdG9zaG9wIDMuMAA4QklNBAQAAAAAAGgcAigAYkZCTUQwYTAwMGFkYjAxMDAwMGI2MDMwMDAwZmMwNTAwMDBkOTA2MDAwMGUxMDcwMDAwMzkwZDAwMDBlODEyMDAwMDQxMTMwMDAwNTExNDAwMDAxZTE1MDAwMDY3MWEwMDAwAP/bAIQABQYGCwgLCwsLCw0LCwsNDg4NDQ4ODw0ODg4NDxAQEBEREBAQEA8TEhMPEBETFBQTERMWFhYTFhUVFhkWGRYWEgEFBQUKBwoICQkICwgKCAsKCgkJCgoMCQoJCgkMDQsKCwsKCw0MCwsICwsMDAwNDQwMDQoLCg0MDQ0MExQTExOc/8IAEQgAlgCWAwEiAAIRAQMRAf/EAKYAAAICAwEBAAAAAAAAAAAAAAAHBAYCAwUBCBAAAgIBBAEDBAMAAAAAAAAAAgMBBAAFERITEBQgIRUjMEAiMTMRAAECBAIGBgcGBAcAAAAAAAECEQADEiExQRAiMlFhcRMggZGh8AQwQlJyseEjM2LB0fEFQ4KiFDRAUFNzkhIBAAEDAgUEAgMBAAAAAAAAAREAITFBURBhcYGRIKGx8MHRMOHxQP/aAAwDAQACAQMBAAABcoAAAAYhkAAAAAAHnh6B6AACacqaBygAatvM9M8KpB8hWCm0npb8ZGjpZe+R7Dw+Ieu/aj2nwZtx8o186/voHnomnKmgcoAHD6qBz0w73VWtnF41k850LPs9an3GRL4UXjzufJiVdl13VpXr1+ebR24LnA0TRNOVNA5QAWa4u8bfBuVy42jXMzr1/r2OPOha4/Ny60WPcvZmU7ZUenEr62fqwziMSzLdka5AmnKmsdjl5nTrvuKruXJseyNcF4yofkrh8iVt0RqPz7RT+rvstigdvj78Isy0ZY5Kxrq/forrySLu9w8TbkTeuQ5eD3tJ4q+/X+jtjMo891So1Mvaw24w+f3eVL8GBSLVq9te4IWXilZa+26a09le0DzxNuVNYb3KACr8uNI2xWD2lpfsN83g96AZL67UvGT5ynIqmrgehyI/vKq2PP2xrXfIsrXvE05U15m5QAF2xPPcEHddnL2xmD1ldLw39eH0jPKX3ahX8PLgvptcz0WO1Q7vhtAMNwmnKmgcoAAAFVtQYqzBrczPWtq009GWqv6rh3/M19dOwY7ADHYAAJpypoHKJoByiaAcomgHKJoByCbAcnqaAcomgHKJoByiaAcqaAP/2gAIAQEAAQUC/Yid/wBGS2ywWw1z3F+qqXjNZZOFqD5z1rsHUnjitbLK95Tseeb/AAM7x7rS5MPqAOBwcxIZGVU2sz6ftnoBz6cU41BqxCZaX9Q25D/wXLcVxYyWFVdLY2jca4nleQLwcLNjVdeCMDl+xMZTtTWJTYYPtYyFjZsS86tbulFfeJSLM/kqaK+s8mOLwWTM6lxlqrvDVystMudJe3WrGCMlNatHh9TnI0bHJoQMsaU4pPMQoWYlFcVYQwUXa3Ic02x3K9kUzuFSTKymfTJq312PDrGE5S59SHNZxOIfz8O1VYFajaJ0+SfSUVV/m0fBVa+dcaI7iYQcW1F2Tb7FnPADgSGUSR9g8v6y3YmQooGcKOUPcSMi4TH+dS/wgImKHhqoZnRxlnEssl6OUXSUysnsWHBkLR24AQEZa+Ia5RR51CN0VvjKE/HiRiJuWuiEaX34jT4Y5lYqRV3i6BHbzcmJFlYALyY8op/OJ+37NST0EuqsRVbjus1k1I0ytxHxYPgBj92I7LPsth1Og4XNUtvOoBzRpAC1folZqAb2fNp8RILnjpQcvbqFbuWs4IK5zGKbDIywvsDSY2ytdJ5NXNi54e7bGRDs6y4KXCx9t5JV5rIJxBY2MLMeLlchIrwTFKr0DM7YdrfGWYZj+KhoVJD8D6pV8Dg1ccxwbcBg2ynIORk7kxjLYzDBLssJHlQ07q/FZ04W4YNVFd6d+oIVVXDM48BKyocCvYdlemCPysqrZk6SnPoysHSkRi0gv9v/2gAIAQMBAT8B9ZMm0L4NBmqVh4RSvj3xUtO/5x6OSoOR27+rNmU8zCZRmY9nndCHl2Icb4SXhEj2l6o8THpC3DIsPNolTWLH9uooFSnyOHIQA0LUE4x6GqhdShbdHpCatcKqHy0Tpd7ZxLNr4ix0KwPKJYvjy87tAFSiTgmw0SF0m+BhaWJibhEn2rvoIcGEZefOHWm7okja56VBj4jzzhCn0jQpTn5efCEJYaVJeAKefz5QJm/z+UPBmARMWfOPnxhCMzbcOqUvjHR7j3wZRtYWjozwHjCUAcfXf//aAAgBAgEBPwH1YhQpN7QEgQ4hgY/jPpIQOiQdZTP+EZdp+UUkBNVicuohLxOuG3YcIrMvHD5QSDslxHpXprakn7RZGVwk5827o9C/h1KxNnaysQMb7zvPhEwVX6gLCKSb5QqfQLseYBhXoU2YFFIoBuBcVR6FP6F5KkCWviNrtP7boAK+MIVCtAhUS10+fP7QlNUwlnSnyIQ+Xkx/FfR+lRqjXl98eiekVyUH2jtcwWfw+cIheWgQrRIAf8t5ipRqY+DUmJrFL4/iZn+kBLWFoRC8tIgiEliOcTEkqWxsL+DvE42ljh89AEEvpBaCXimAreHbD9Dwguq5zhIhR6oLRVFcVQVeu//aAAgBAQEGPwL/AGkcS0HjaOUMDWfw/rhGqEp8TH3h7GEfer74235gGNdAPK0aqr7jYwOF4eAd/XITtYp+IXEMdWY908YKXZ4Y5RqoLbzYeMa02WntePv09xjUXLXyVfxjXSUw3ed0coTIkl69pW5Ofh6h8VHZG+Cs7RvGF04nKKmTVkSHaHUozOeHdCgEhJQqkjzw0dHQCaajw3Rqq/oVrpPfFgBygy7j3ocXB2hAUm4PWKjgIKj2DcI91CbqVu+sC1MsbKN/FUOg+fyjyxiYan6RjfF79+hc0KcmwAwZs4fxMUG5VlwileHsTM0ncrhBSqxEUnYX4Hf1hKHNX5QAMTYQEexL2vxzP0GipCjKXvGfMZw5nvzBI7sIsYZ7QaVAL4h27I/zJv2/O0Wck7SjdRgg3BgjFcoOD70v9RoD7SbHzy6sya4AL033YeETFnal6oz11Wh2egOeO+NUsr3TjoZPfDTFtwxPbuicldkS2pIx3drmKpaqgO8cxDHHRQNdTtbDvgTPcP8AacYUhLU4/wBJ8tBlnCYNXs6kw7kmKUti94lfjWuYezCCk4GDYCYnXlLFqgnFB4wlQtWIqzyzZrktwGHGDLEtJKqaVOSutRwUTmzkx6QkXpvzpUH8IdCUy2UEopfWBwqGBSrvEBQs9xw4QlCNucaeW/wggJHRCwPtLUk3U+5xaCN8Spo2qFSz/Sc4lzFYgpHj9epM5fnGzL6GjG3SPT/6eqJP/T8zoDuCLgixECWL0hg8CWgGYtBdwSkIPFQ+QhCnC5jlx+EjLFr54mFTGcrd+3dAWhTqbXS9N82IunlhFCXQqWPuziPO+A5Umg5WxDQEiwGGhJdmnruz+EfZijWDinavi+Xw9SZ8PyhGrJSVDVF+kU4bHAPEj4Fo7UnTVwgIkpxD1+yH474qVOCicaTV3mJsuogIz7Yqlzk/CSAe7OErUmhYNP7bwYPE6ZdTsqZMUWxaEpTMqJKNWljrX5dQjeG74vSZkoFtUqWKe5OODwtOPQzAu+NKxf69QTAkKlqspBwc5jc8f4iTMKLYKZuRicUqp6VqVEcb/R+2KlPOmKwCsOZaOkVtKw3JScgMtKjnlzOEBIWUdCgJDe0o3IuweJaHKijWUSlIwHDqqTSVpmsoJBZ1DfnxgKVQDsTEJ9xeHaDjcwZZxR4pyOmYPwv3XhaVioJW4B5QdROs2QyiXL9kBCRyfqEnYk3PFfsiC6UzDMFS/tW2jYszci8Lml/cQ9zSOPVttJun9O2AEoQlUwlDNbmTtdkJRUCtI+yVktOaTDjtGYOhaQWqBET5KrK+jRJlEMUHXPwC31jU/l0ufh8tpoTtn+0bzFIq6FD3G0pWa2zAgSApMzpFOhvZAxP0gJGCR1jOlgFJupJDsoYKgm4AuVDHfbjFKlBE4NrezMGVQyMUr1F7jnyOegT5W2naT7yYeSl503Jrhve5RvWq6jvOg0YDGYdkfrBloXSDtTFfzD+QjZVLKhUim46QbvpYiDMX96vHh5z9RVKFUt6qMaT7yYUEBq1BJqZ/eKifhGGUFKGmSdWhMzOpNVjkwhqlyT7q9dPYd0WMpfJbfOCoSkAqxNaYvMko7azFTLnXaperLB5RK6VQUmuiikpSC2QzF8YaWXU7GWHLHgcxAVMurIZJ+vqipP2azmM+YimYklIQUJXLuz4luVol32WQmoOWfWJyD4DdBFIUqmYpm1tpgauELDOejVT8Q3QyAlEwJlEvSMXCnfsMFKU1hS1aowpIS+W8asf8aGA1rktgWyVxtFrqOKjcn1ushJ7IsFJ5KMYr7/pGzVzJMaqQnkP9X//aAAgBAQIBPyH/AKIAmH+BYjn/AAne2nWF/FWt/p/VGe9r2x7VNoHS47/gmsfvOfeg9qyp/Rgr/Q1rn6DE+9AsRu5eGT3KssH3Br2moEGf8KjsETUMYA+fWnkGG2X5CKjnjAo4WYduuMVdx1GLYncpkEORVx+gUwqeTbTfsV/j9PjDB4Q+aSjmyW8496MCwX2H72oczYZWWA1WruEAYh1+uHKd6CCDB65+0G6/RrTU3JJa9IZVi1qxfflUVyBHcoKPOu0DtgO9Sh0EFkuOMKEqKkAaTBYsDeVnsUBug8gdLjzU9GqsCCWohN0kKbHLnrUZsLcOTomnvSZQ5H7rv6kFg1XpWtHbwB++dIssDkmxzaUE/N6/ylzHmik2UTSTImVy9qHGii+U2GMMr4ys+ThapJpEDquSBjV0pfm+n+UYCZuzuYMHP3oAecWurDarR/NDlLh/ZydKvPc/X0OHz6ss+1n58UacqButFhu8ryTwbpbZxxxpdWaHClyIjrTwh51ApN+T971BNsMfveuTEWPNcT8G1MFAygV2LHahXU65PN+DBRpwISma6svu/XhdCe7xh7+6fTKoN2UqgMTAC83nSiRIYZNGxJY+aJuZSFZU7zLVvQM2OzR7cMzdf0/dApXaIdg+V6FjDQW4WLyKsR1BJ1C58NBpD79OAWVBgArF1+BqKszPOwfF+1Q5gk1xfIMvQZzTMiyQ5zGMlpHnj0dIX1i3vUYEM1zoEEJGM3q4d9XdMu8URMjCcmrAmhuqFMgxud6CW3V8hh98O1SwYUiiyObOByTaiVGj0IEThNg5VIIjYZBIc7kqeXkFwej0Zcl7w07KJvbuxtU9hEum/Ps86UKWcWZSmWAChQwEe9WStyYmI5qgUEEYixg0k4Hg46b4VDh70cGU56KIih4z7jPAa4MtIiJHopDI6lE7oBMozeOtapRqjOis6y0M5KRgCLBlKMtd6oyrDxnO7DvNRXNZq/t6ucnmNaAxguEPeTYKNClKCTlLK8SW2hoCYcDYODGgb5CCK83SozNnUTpCTA7ODwhvM/L8VCRXrEBAiVFic1Au7PZ+3FA+R6ZpzA2qFt5WUyyvO9GG/KE77mvanzKYES2F7RiplqZQzZnA8cqmbtBzKCmsDMfqaG1qL34z0s2jcgQbVcMKSAhlLgknB4T/AIbwRVmCCRNK2qst6aeYrlTr41JeqhniKajgfmO4161A+ybieuvE21dtKvy0bEQJwtlJcE0nUirL9zuTq3qHw8jF0MKWWOmnGNNEeB7mmZHGIoocpRot4qYHqmZBCb2GC+uPS0hlYOVIuBwEzNI8SVSDMd9wKUJnE7/4rPTiKWiHW18UbUS8AtZVrGBgsgjbtREkA2y/SgjjcC7l/Dmjw4LGZJIgRsGWtIkMcnqOq9p5enHb/W37HvFH5okwnXSIJCV29XieQctJUIiITtWNCWTqB4LOgRzElQ7DbmuTjox5Ka7IbkmGl4u1sVGVBuYZPeeJMFPtqco03oWXYN3d1lwveShoSElS6XYzeWRc5xvgP33z6kIqQhiOIvr+G0iZEyQ3gTLcBSR4IOzCRtHhpjB4j2Q9+BXyUexdY+yFR1W0bqyf2Z6UcazOfPwf3QCVgNWosobV6e7pamhteZ2VM/3m4kRS4rOqzpKVFpq09u2BB0taX1kEhuNPxYqRM9CTBz6yYyjABZ3ZgSAAt6nSE6l8gh0KTnFTBbcQ36pr5hr4lWmd7l6sTXturwkVAgI5mYs/JTJBPYFSReFIaUwzeZguWvc6Vpk68y7adljTf+JZKBHCXJYmdagzuC3CVQyg0WoEEXBA5wdXqQntPAlkyBllYzS8lKR3Q62E6omh2dR8AGjhDNSHTJ0QiCU3NEZqNlZrg3yMEWc1TUf7AX6/lz+75eS9Pv8AQGZoG54JRCVL7l6Ajpwf8E1NT/D/AP/aAAwDAQICAgMCAAAQ88kM8sa08o8oQnjwlx0oshhZV+VLsoQmUV3PtjVA4vhyiVyAVoyDAfxKD1/gcpEVoFHuXIs5J0ViZ00o8s3Of9tk8owwwAwgwwwg/9oACAEDAgE/EOE/xOLmzHVfefarNZyH1qT9v71kT3WfkpFGCxo3W2PmpnHojwcjlzq4LEyy/X+V4aWPvXtQCSrPkLf0UlmxY05NBpJmy66v16DSEW76aXrExRE+G9AUVzuhcMO3+Vr1/dvrvwsMsP195Uyf6B/XBwuyfamhMgPkYok02uDqH2eHlHtUS0MVrDCYdrle0s9f84RDcTzX38Pm7gkYtN3vxWc1ec0HvPLQdahsth47u/GX+nL/AFhqB9+/ZporVSxWkSX0Xe82dVQR568YsTCYdn77U9vWzj7a5K6LS/7/AKdKjWofemfakeYSbun+0+0Drz9JGBNTNT61rswzn2r6n9K5o3fx/N//2gAIAQICAT8Q9Shlj+7HpIoLA67c6eI/WvMq7Z5tdHxXJfFXGJ0cgz3UQZ7ipsIQuo7c2fHol3wVAl9H21NlP7fYq7c2+a+3ADm8OtSBvzbDdabpg71zV+fQUWp88BaCMR2C+ntUDc6ESEHmp/IX/wByhawrgG9sN+BlOpwyOX32cO9MsEx/riw4/wBuS+jFMuMoR24lRb6mj9ntXSf7HLgUYjBA0Od6ynb7+T1CmMxAZ2hpo/EOAhBPpJM33N+Ba/llQCesKmD/AMVP/9oACAEBAgE/EPTPCKioqKj+R52KBFICO44/gGBYlB1hfg/hbLiBOYHmzrS65AfP5UBLA9MydPwpGwJaF5vyLlU6aIR5VGzPQA+3QNBji7fitDJqU7qXyiBAn9erd2k77kuv00XByC6ET8UeJF6AT2fX03UM/OS5LRvWTktC1aHJzUqxXATgJ3R61KO0J9xs0fN8t7Me00dpSH2qf2pvNeGT+Io5IBd+hl9qT4x/hnP+1BIuS7UVw2LrU4VsQNZZfQDIIAANAsHj125yJEO67azsXSsElkcqAxEEUz2aBT1NAte7FHXVJTUFzSpmJz9sdtSraoFXYQT1RRkpLoeKu72ZZ7BlmSOYVF/fuDQ+dIx4nsD4p5ctJMXJdevQNaxWG1k35Boccga4Ae4mgbBw29XSjW2zdcBq2qz9qVjw/K1S0g32ePdNF36/fPA74x0FDYB7YDrC1M9T0b/gfko5UUprR7CQ+4sVsaAZcXXoNlQkOYyxdt/ZTvMSF9B87uFtWYmFnWBpyTULranG3ozhLcix2dHqTfoj2m/3F9Kc55oOCv2Bk/dsdDTgbnLRzA+LTBvFYu428SAoCYXoJ80vYmGtG7nDPVnuqdfknbsedRUjt68SmckQOtX0NCNAoiKisI1+6JAt+Cdsi50Px08QpYqAOrERUUAeXSHAyNagDuwcxJqVEoQJCQGWCic1tQ4XuSH8fblWMhyLnWyP8K8vstQlCUmauvDfXTM/7qAsC7Hf8jhMv3nY/wAqFvUhHNZ3iLQNuquZQoFx3g512dpkcQqObKO5PcK/NvziQy/0/tg4TWiXxu+o/YoiSEJSB1JZZ+UhNS6m3M9/j0Z1nIUXo5LhpcmbVwB4BEsxSQoJCnjiZTUdb9PriXiI6lBGD0wrBHeBXtltGH5r7EBZANJrM4Nd4HMCW/EU0LMXk+GUiLN/lPCaUEhGumDdgAMJVv8ApLVnAFpYKSWKgHd1E8jV9bwEEEdp7fW6AYQkaFuANJ1UYyEd0X8yvLyrYE3oFsmh3maPWCWYsAvK9Vl14Hxbq2DWnb7QAemjxFOXn3A4W8ISaCSlLPIAPycbRCTo0N1r2rltoEWk9Qh5cZqUbbvGmMLvAr7UlZsmukYajV0GKvJRPvlLi0rMU9ICEBUMrTi/QAWdG6J+VQr6MB0CI1GqAqAAjI3HceM1TJm6UvtFUQWHdUeTSOr9Y5EEEUhCBFJm0FPNeyHPjUBHAhpxOTJ9W3eLhokXZSgs3pKOWywhAhwqPQESBnSeQ6FgiTtj39xxewI78hQ4fYarRTfBxFcBjRmmxgicN5UAgICwcjjYqPQED3S5pwt7MBsohD8ex6y8DJxRLnXA/U8Atf8A/wBqe38kU+06tFm9RGOFh6J75OAVH1IKK5tTlHok+ABqeKvl5okMyB65+Y4HXbiuXQX/ABHoNXGQMWHHLSMEieCHvG8TGVzUrm+qT1XpdrdBX0LehdvVmwlEWspmapiYJ86Xe+sY4fOVpXR/Dcf0jPBEqFf74NZuW3vqpAIEqABzWxTctQ11+PuVPoN+nOW1PyLF9kqAZBD7CjYaiGttL+p0ABESRGyI2RKW9Qz5QcjgCGj/AFXAhmwKKHOPk9I0CTSxR/00xQrYRkB2KjLTxdoECew71hkGtKAwPt0z9wuqA6P3nfIf4gW4IDE2KxqELrNRAPQ42CUwuGxYD5BfgMoaXnAibSNcc41u0xGEaDeRgih+M/LlxUBCfI8puzpF0gb/AMc8L8g1g9t76U7AmaGwNMQw6IE81qh6b9zsGoQDrPVCXu/zR6hHr//Z", style: { width: 44, height: 44, objectFit: "contain", borderRadius: "50%" }, alt: "Logo" })
                 ),
-                React.createElement("div", { style: { width: 1, height: 44, background: "rgba(255,255,255,.25)", flexShrink: 0 } }),
+                React.createElement("div", { className: "header-sep" }),
                 React.createElement("div", { style: { flex: 1, minWidth: 150 } },
                     React.createElement("div", { style: { fontSize: 7.5, color: "#bfdbfe", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase" } }, "Direktorat Jenderal Perhubungan Udara"),
                     React.createElement("div", { style: { fontSize: 8, color: "#93c5fd", fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase" } }, "Kantor Otoritas Bandar Udara Wilayah X · Merauke"),
@@ -1899,21 +2209,21 @@
                     ),
                     React.createElement("div", { style: { fontSize: 9, color: "#93c5fd" } }, "Seksi Kelaikudaraan & Pengoperasian Pesawat Udara")
                 ),
-                React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 } },
-                    React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } },
+                React.createElement("div", { className: "header-nav-area" },
+                    React.createElement("div", { className: "header-nav-buttons" },
                         [["dashboard", "🏠 Dashboard"], ["rekap", "📊 Rekapitulasi"], ["hukum", "⚖️ Dasar Hukum"]].map(([v, l]) =>
                             React.createElement("button", { key: v, onClick: () => setView(v), style: { fontSize: 11, padding: "5px 13px", borderRadius: 7, cursor: "pointer", border: "1.5px solid rgba(255,255,255,.35)", background: view === v ? "rgba(255,255,255,.22)" : "transparent", color: "#fff", fontWeight: view === v ? 700 : 400, backdropFilter: "blur(2px)" } }, l)
                         )
                     ),
-                    React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 5, background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 20, padding: "3px 10px" } },
+                    React.createElement("div", { className: "header-connected", style: { display: "flex", alignItems: "center", gap: 5, background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 20, padding: "3px 10px" } },
                         React.createElement("div", { style: { width: 7, height: 7, borderRadius: "50%", background: "#4ade80", boxShadow: "0 0 6px #4ade80" } }),
-                        React.createElement("span", { style: { fontSize: 10, color: "#fff", fontWeight: 600, letterSpacing: ".05em" } }, "🔥 Firebase Connected")
+                        React.createElement("span", { style: { fontSize: 10, color: "#fff", fontWeight: 600, letterSpacing: ".05em" } }, "Connected")
                     )
                 )
             )
         );
 
-    const Main = ({ children }) => React.createElement("div", { style: { padding: "16px 20px 40px", maxWidth: 1100, margin: "0 auto" } }, children);
+    const Main = ({ children }) => React.createElement("div", { className: "main-pad" }, children);
 
     const App = () => {
         const [view, setView] = useState("dashboard");
@@ -2008,11 +2318,15 @@
             }
         }, [pegawaiList]);
 
+        const isAddingRef = useRef(false);
         const addRecord = useCallback(async (rec) => {
+            // Guard: tolak panggilan bersamaan (double-tap / race condition)
+            if (isAddingRef.current) return false;
             if (isDuplicateForPegawai(records, rec.pegawaiId, rec)) {
                 alert("⚠️ Data Tersebut Telah Terunggah");
                 return false;
             }
+            isAddingRef.current = true;
             try {
                 const saved = await fsAddRecord(rec);
                 setRecords(prev => [...prev, saved]);
@@ -2022,6 +2336,8 @@
                 console.error("Gagal simpan record:", e);
                 alert("Gagal menyimpan ke database: " + e.message);
                 return false;
+            } finally {
+                isAddingRef.current = false;
             }
         }, [records]);
         
@@ -2059,7 +2375,7 @@
         // Komponen stat grid
         const StatGrid = ({ recs }) => {
             const s = cntS(recs, "Satisfactory"), mi = cntS(recs, "Minor Finding"), ma = cntS(recs, "Major Finding");
-            return React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 14 } },
+            return React.createElement("div", { className: "stat-grid" },
                 [{ l: "Total Inspeksi", v: recs.length, c: "#1d4ed8", bg: "#eff6ff", bo: "#bfdbfe", icon: "📋" },
                  { l: "Satisfactory", v: s, c: "#22c55e", bg: "#dcfce7", bo: "#86efac", icon: "✅" },
                  { l: "Minor Finding", v: mi, c: "#f97316", bg: "#fff7ed", bo: "#fdba74", icon: "⚠️" },
@@ -2097,7 +2413,7 @@
                         onClose: () => setShowEditPegawai(false) 
                     }),
                     React.createElement(Card, null,
-                        React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-start" } },
+                        React.createElement("div", { className: "filter-inner" },
                             React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 4, background: "#f8fafc", border: "1.5px solid #e2e8f0", borderRadius: 8, padding: "4px 8px" } },
                                 React.createElement(IconCalendar, null),
                                 React.createElement(DD, { options: [{ v: "Semua", l: "Semua Bulan" }, ...BULAN.map((b, i) => ({ v: String(i + 1), l: b }))], value: dbBulan, onChange: setDbBulan, placeholder: "Bulan", width: "120px" })
@@ -2143,7 +2459,7 @@
                                 React.createElement("svg", { width: 12, height: 12, viewBox: "0 0 24 24", fill: cc }, React.createElement("path", { d: "M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" })),
                                 isK ? "Seksi Kelaikudaraan" : "Seksi Pengoperasian Pesawat Udara"
                             ),
-                            React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 10 } },
+                            React.createElement("div", { className: "pegawai-grid" },
                                 sortPegawaiByJabatan(pegawaiList.filter(p => p.bidang === bid)).map(p => {
                                     const pr = filterR(perPegUR.filter(r => r.pegawaiId === p.id), dbBulan, dbYr, dbBdr);
                                     const ps = cntS(pr, "Satisfactory"), pmi = cntS(pr, "Minor Finding"), pma = cntS(pr, "Major Finding");
@@ -2186,7 +2502,7 @@
                         React.createElement("button", { onClick: handleRekapPDF, style: { display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, padding: "6px 16px", borderRadius: 8, border: "none", background: "#1d4ed8", color: "#fff", cursor: "pointer" } }, "📄 Cetak PDF")
                     ),
                     React.createElement(Card, null,
-                        React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-start" } },
+                        React.createElement("div", { className: "filter-inner" },
                             React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 4, background: "#f8fafc", border: "1.5px solid #e2e8f0", borderRadius: 8, padding: "4px 8px" } },
                                 React.createElement(IconCalendar, null),
                                 React.createElement(DD, { options: [{ v: "Semua", l: "Semua Bulan" }, ...BULAN.map((b, i) => ({ v: String(i + 1), l: b }))], value: rkBulan, onChange: setRkBulan, placeholder: "Bulan", width: "120px" })
@@ -2205,8 +2521,8 @@
                         React.createElement("div", { style: { fontSize: 13, fontWeight: 600, color: "#1d4ed8", marginBottom: 12, textAlign: "center" } },
                             "Data Ramp Inspection " + (rkBulan !== "Semua" ? BULAN[parseInt(rkBulan) - 1] + " " : "") + rkYr + (rkBdr !== "Semua" ? " | " + rkBdr : "")
                         ),
-                        React.createElement("div", { style: { display: "flex", gap: 0, alignItems: "stretch", flexWrap: "wrap" } },
-                            React.createElement("div", { style: { flex: rkBulan === "Semua" ? "0 0 auto" : "1 1 auto", minWidth: 240, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "8px 24px 8px 8px", borderRight: rkBulan === "Semua" ? "1.5px solid #e2e8f0" : "none" } },
+                        React.createElement("div", { className: "rekap-chart-row" },
+                            React.createElement("div", { className: "rekap-left-panel" },
                                 React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 18, flexWrap: "wrap" } },
                                     React.createElement(DonutChart, { s: s, mi: mi, ma: ma }),
                                     React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10 } },
@@ -2220,7 +2536,7 @@
                                     )
                                 )
                             ),
-                            rkBulan === "Semua" && React.createElement("div", { style: { flex: "1 1 0", minWidth: 280, padding: "8px 8px 8px 16px", display: "flex", flexDirection: "column" } },
+                            rkBulan === "Semua" && React.createElement("div", { className: "rekap-left-panel-full", style: { flex: "1 1 0", minWidth: 280 } },
                                 React.createElement("div", { style: { width: "100%", overflowX: "auto", flex: 1 } }, React.createElement(BarChart, { monthly: monthlyAll }))
                             )
                         )
@@ -2267,7 +2583,7 @@
                     showForm && React.createElement(InspeksiForm, { selPeg: selPeg, onSave: addRecord, existingRecords: records }),
                     React.createElement(StatGrid, { recs: pfRecs }),
                     React.createElement(Card, { style: { padding: "10px 14px" } },
-                        React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-start" } },
+                        React.createElement("div", { className: "filter-inner" },
                             React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 4, background: "#f8fafc", border: "1.5px solid #e2e8f0", borderRadius: 8, padding: "4px 8px" } },
                                 React.createElement(IconCalendar, null),
                                 React.createElement(DD, { options: [{ v: "Semua", l: "Semua Bulan" }, ...BULAN.map((b, i) => ({ v: String(i + 1), l: b }))], value: pfBulan, onChange: setPfBulan, placeholder: "Bulan", width: "120px" })
@@ -2282,28 +2598,41 @@
                             )
                         )
                     ),
-                    React.createElement("div", { style: { border: "1.5px solid #e2e8f0", borderRadius: 10, overflowX: "auto" } },
-                        React.createElement("table", { style: { width: "100%", borderCollapse: "collapse", fontSize: 12 } },
-                            React.createElement("thead", null, React.createElement("tr", { style: { background: "#f8fafc", borderBottom: "2px solid #e2e8f0" } }, ["No", "No.SPT", "Tanggal", "Bandara", "Maskapai", "Flight", "Tipe", "Status", ""].map(h => React.createElement("th", { key: h, style: { padding: "9px 12px", textAlign: "left", fontWeight: 700, fontSize: 11, color: "#64748b", whiteSpace: "nowrap" } }, h)))),
-                            React.createElement("tbody", null,
-                                pfRecs.length === 0 ? React.createElement("tr", null, React.createElement("td", { colSpan: 9, style: { padding: 24, textAlign: "center", color: "#94a3b8" } }, "Belum ada data inspeksi.")) :
-                                pfRecs.map((r, i) => React.createElement("tr", { key: r.ts, style: { borderBottom: "1px solid #f1f5f9" } },
-                                    React.createElement("td", { style: { padding: "8px 12px", color: "#94a3b8", fontWeight: 600 } }, i + 1),
-                                    React.createElement("td", { style: { padding: "8px 12px", color: "#64748b", fontSize: 11 } }, r.nomorSPT || "-"),
-                                    React.createElement("td", { style: { padding: "8px 12px", whiteSpace: "nowrap", fontWeight: 600 } }, r.tanggal),
-                                    React.createElement("td", { style: { padding: "8px 12px", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, r.bandara),
-                                    React.createElement("td", { style: { padding: "8px 12px", fontWeight: 600 } }, r.maskapai),
-                                    React.createElement("td", { style: { padding: "8px 12px", color: "#1d4ed8", fontWeight: 700 } }, r.flightNumber || "-"),
-                                    React.createElement("td", { style: { padding: "8px 12px" } }, r.tipePesawat),
-                                    React.createElement("td", { style: { padding: "8px 12px" } }, React.createElement(ScBadge, { status: r.status })),
-                                    React.createElement("td", { style: { padding: "8px 10px" } },
-                                        React.createElement("div", { style: { display: "flex", gap: 5 } },
-                                            React.createElement("button", { onClick: () => { setSelIns(r); setView("detail"); }, style: { background: "#eff6ff", border: "none", cursor: "pointer", color: "#1d4ed8", padding: "5px 7px", borderRadius: 7, display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 600 } }, "👁️ Lihat"),
-                                            React.createElement("button", { onClick: () => setDelTgt(r), style: { background: "#fef2f2", border: "none", cursor: "pointer", color: "#dc2626", padding: "5px 7px", borderRadius: 7, display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 600 } }, "🗑️ Hapus")
-                                        )
+                    React.createElement("div", { style: { border: "1.5px solid #e2e8f0", borderRadius: 10, overflow: "hidden" } },
+                        React.createElement("div", { style: { overflowX: "auto", overflowY: "auto", maxHeight: 440, borderRadius: 10 } },
+                            React.createElement("table", { style: { width: "100%", borderCollapse: "collapse", fontSize: 12 } },
+                                React.createElement("thead", null, React.createElement("tr", { style: { background: "#f8fafc", borderBottom: "2px solid #e2e8f0" } },
+                                    ["No", "No.SPT", "Tanggal", "Bandara", "Maskapai", "Serial No.", "Route From", "Flight No. From", "Route To", "Flight No. To", "Tipe", "Status", ""].map(h =>
+                                        React.createElement("th", { key: h, style: { padding: "9px 12px", textAlign: "left", fontWeight: 700, fontSize: 11, color: "#64748b", whiteSpace: "nowrap", position: "sticky", top: 0, background: "#f8fafc", zIndex: 2, boxShadow: "0 2px 0 #e2e8f0" } }, h)
                                     )
-                                ))
+                                )),
+                                React.createElement("tbody", null,
+                                    pfRecs.length === 0 ? React.createElement("tr", null, React.createElement("td", { colSpan: 13, style: { padding: 24, textAlign: "center", color: "#94a3b8" } }, "Belum ada data inspeksi.")) :
+                                    pfRecs.map((r, i) => React.createElement("tr", { key: r.ts, style: { borderBottom: "1px solid #f1f5f9", background: i % 2 === 0 ? "#fff" : "#f8fafc" } },
+                                        React.createElement("td", { style: { padding: "8px 12px", color: "#94a3b8", fontWeight: 600 } }, i + 1),
+                                        React.createElement("td", { style: { padding: "8px 12px", color: "#64748b", fontSize: 11 } }, r.nomorSPT || "-"),
+                                        React.createElement("td", { style: { padding: "8px 12px", whiteSpace: "nowrap", fontWeight: 600 } }, r.tanggal),
+                                        React.createElement("td", { style: { padding: "8px 12px", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, r.bandara),
+                                        React.createElement("td", { style: { padding: "8px 12px", fontWeight: 600 } }, r.maskapai),
+                                        React.createElement("td", { style: { padding: "8px 12px", color: "#475569", fontWeight: 600 } }, r.aircraftSerialNumber || "-"),
+                                        React.createElement("td", { style: { padding: "8px 12px", color: "#1d4ed8", fontWeight: 700 } }, r.routeFrom || "-"),
+                                        React.createElement("td", { style: { padding: "8px 12px", color: "#475569" } }, r.flightNumberFrom || "-"),
+                                        React.createElement("td", { style: { padding: "8px 12px", color: "#1d4ed8", fontWeight: 700 } }, r.routeTo || "-"),
+                                        React.createElement("td", { style: { padding: "8px 12px", color: "#475569" } }, r.flightNumberTo || "-"),
+                                        React.createElement("td", { style: { padding: "8px 12px" } }, r.tipePesawat),
+                                        React.createElement("td", { style: { padding: "8px 12px" } }, React.createElement(ScBadge, { status: r.status })),
+                                        React.createElement("td", { style: { padding: "8px 10px" } },
+                                            React.createElement("div", { style: { display: "flex", gap: 5 } },
+                                                React.createElement("button", { onClick: () => { setSelIns(r); setView("detail"); }, style: { background: "#eff6ff", border: "none", cursor: "pointer", color: "#1d4ed8", padding: "5px 7px", borderRadius: 7, display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 600 } }, "👁️ Lihat"),
+                                                React.createElement("button", { onClick: () => setDelTgt(r), style: { background: "#fef2f2", border: "none", cursor: "pointer", color: "#dc2626", padding: "5px 7px", borderRadius: 7, display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 600 } }, "🗑️ Hapus")
+                                            )
+                                        )
+                                    ))
+                                )
                             )
+                        ),
+                        pfRecs.length > 10 && React.createElement("div", { style: { padding: "6px 14px", background: "#f8fafc", borderTop: "1px solid #e2e8f0", fontSize: 11, color: "#94a3b8", textAlign: "right", borderBottomLeftRadius: 9, borderBottomRightRadius: 9 } },
+                            "Scroll untuk lihat " + pfRecs.length + " data • Menampilkan semua " + pfRecs.length + " baris"
                         )
                     )
             );
@@ -2325,7 +2654,20 @@
                             React.createElement(ScBadge, { status: r.status })
                         ),
                         React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 20px", borderTop: "1px solid #f1f5f9", paddingTop: 12 } },
-                            [["Inspector", ins ? ins.nama : "-"], ["Nomor SPT", r.nomorSPT || "-"], ["Tanggal", r.tanggal], ["Bandara", r.bandara], ["Maskapai", r.maskapai], ["Flight Number", r.flightNumber || "-"], ["Registrasi", r.registrasi], ["Tipe Pesawat", r.tipePesawat]].map(([l, v]) =>
+                            [
+                                ["Inspector", ins ? ins.nama : "-"],
+                                ["Nomor SPT", r.nomorSPT || "-"],
+                                ["Tanggal", r.tanggal],
+                                ["Bandara", r.bandara],
+                                ["Maskapai", r.maskapai],
+                                ["Registrasi", r.registrasi],
+                                ["Tipe Pesawat", r.tipePesawat],
+                                ["Aircraft Serial Number", r.aircraftSerialNumber || "-"],
+                                ["Route From", r.routeFrom || "-"],
+                                ["Flight Number From", r.flightNumberFrom || "-"],
+                                ["Route To", r.routeTo || "-"],
+                                ["Flight Number To", r.flightNumberTo || "-"],
+                            ].map(([l, v]) =>
                                 React.createElement("div", { key: l, style: { borderBottom: ".5px solid #f1f5f9", paddingBottom: 8 } },
                                     React.createElement("div", { style: { fontSize: 10, color: "#94a3b8", marginBottom: 2, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".05em" } }, l),
                                     React.createElement("div", { style: { fontSize: 13, fontWeight: 700 } }, v)
