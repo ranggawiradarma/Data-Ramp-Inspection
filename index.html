@@ -8,31 +8,30 @@
     <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.development.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
-        import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, setDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyC7NSwHJJIyuupryioYTHUpT8vvONzGFHk",
-            authDomain: "data-ramp-inspection---obu-x.firebaseapp.com",
-            projectId: "data-ramp-inspection---obu-x",
-            storageBucket: "data-ramp-inspection---obu-x.firebasestorage.app",
-            messagingSenderId: "250304535649",
-            appId: "1:250304535649:web:fa24f9a62a08d768759e20",
-            measurementId: "G-3P1QR3WWPM"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        // Expose Firestore helpers ke window agar bisa dipakai oleh kode React di bawah
-        window.__db = db;
-        window.__fsHelpers = { collection, getDocs, addDoc, deleteDoc, doc, setDoc, onSnapshot, query, orderBy };
-
-        // Signal bahwa Firebase sudah siap
-        window.__firebaseReady = true;
-        window.dispatchEvent(new Event("firebaseReady"));
+    <!-- Firebase compat SDK (non-module, synchronous load order guaranteed) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script>
+        // Inisialisasi Firebase langsung — tidak perlu module/promise/event
+        (function() {
+            try {
+                const firebaseConfig = {
+                    apiKey: "AIzaSyC7NSwHJJIyuupryioYTHUpT8vvONzGFHk",
+                    authDomain: "data-ramp-inspection---obu-x.firebaseapp.com",
+                    projectId: "data-ramp-inspection---obu-x",
+                    storageBucket: "data-ramp-inspection---obu-x.firebasestorage.app",
+                    messagingSenderId: "250304535649",
+                    appId: "1:250304535649:web:fa24f9a62a08d768759e20"
+                };
+                if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+                window.__db = firebase.firestore();
+                window.__firebaseReady = true;
+            } catch(e) {
+                console.error("Firebase init error:", e);
+                window.__firebaseReady = false;
+                window.__firebaseError = e.message;
+            }
+        })();
     </script>
     <style>
         * { box-sizing: border-box; }
@@ -294,7 +293,7 @@
         .avi-signal { opacity: 0; }
 
         /* ─── MOBILE RESPONSIVE ─── */
-        .stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 14px; }
+        .stat-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; margin-bottom: 14px; }
         .header-inner { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; max-width: 1100px; margin: 0 auto; padding: 12px 20px 14px; }
         .header-sep { width: 1px; height: 44px; background: rgba(255,255,255,.25); flex-shrink: 0; }
         .header-nav-area { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
@@ -385,64 +384,60 @@
     const ini = n => n.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
     const fmtD = v => { if (!v) return ""; const d=new Date(v+"T00:00:00"); return p2(d.getDate())+" "+BULAN[d.getMonth()]+" "+d.getFullYear(); };
     const todayS= () => { const d=new Date(); return p2(d.getDate())+" "+BULAN[d.getMonth()]+" "+d.getFullYear(); };
-    const scCls = s => s==="Satisfactory"?{bg:"#d1fae5",col:"#065f46",bd:"#34d399"}:s==="Minor Finding"?{bg:"#fef9c3",col:"#854d0e",bd:"#fde047"}:{bg:"#fee2e2",col:"#991b1b",bd:"#fca5a5"};
+    const scCls = s => s==="Satisfactory"?{bg:"#d1fae5",col:"#065f46",bd:"#34d399"}:s==="Minor Finding"?{bg:"#fef9c3",col:"#854d0e",bd:"#fde047"}:s==="Significant Finding"?{bg:"#ffedd5",col:"#9a3412",bd:"#fb923c"}:{bg:"#fee2e2",col:"#991b1b",bd:"#fca5a5"};
     const cntS = (a,s) => a.filter(r=>r.status===s).length;
 
-    // ── FIRESTORE HELPERS ──────────────────────────────────────────
-    // Tunggu Firebase siap, lalu jalankan callback
-    const waitFirebase = (cb) => {
-        if (window.__firebaseReady) { cb(); }
-        else { window.addEventListener("firebaseReady", cb, { once: true }); }
-    };
+    // ── FIRESTORE HELPERS (Firebase Compat SDK) ──────────────────────────────────────────
+    // Compat SDK sudah dimuat synchronous — tidak perlu tunggu event/promise
+    const waitFirebase = (cb) => { cb(); };
 
-    // Load semua records dari Firestore
+    // Load semua records dari Firestore (compat API)
     const fsLoadRecords = async () => {
-        const { collection, getDocs } = window.__fsHelpers;
-        const snap = await getDocs(collection(window.__db, "records"));
+        if (!window.__db) throw new Error("Firebase tidak tersedia");
+        const snap = await window.__db.collection("records").get();
         return snap.docs.map(d => ({ ...d.data(), _docId: d.id }));
     };
 
-    // Tambah satu record ke Firestore, return record dengan _docId
+    // Tambah satu record ke Firestore
     const fsAddRecord = async (rec) => {
-        const { collection, addDoc } = window.__fsHelpers;
-        const docRef = await addDoc(collection(window.__db, "records"), rec);
+        if (!window.__db) throw new Error("Firebase tidak tersedia");
+        const docRef = await window.__db.collection("records").add(rec);
         return { ...rec, _docId: docRef.id };
     };
 
-    // Hapus record dari Firestore berdasarkan _docId
+    // Hapus record dari Firestore
     const fsDeleteRecord = async (docId) => {
-        const { doc, deleteDoc } = window.__fsHelpers;
-        await deleteDoc(doc(window.__db, "records", docId));
+        if (!window.__db) throw new Error("Firebase tidak tersedia");
+        await window.__db.collection("records").doc(docId).delete();
     };
 
     // Load semua pegawai dari Firestore
     const fsLoadPegawai = async () => {
-        const { collection, getDocs } = window.__fsHelpers;
-        const snap = await getDocs(collection(window.__db, "pegawai"));
-        if (snap.empty) return null; // null = gunakan default PEGAWAI
+        if (!window.__db) throw new Error("Firebase tidak tersedia");
+        const snap = await window.__db.collection("pegawai").get();
+        if (snap.empty) return null;
         return snap.docs.map(d => ({ ...d.data(), _docId: d.id }));
     };
 
     // Simpan satu pegawai baru ke Firestore
     const fsAddPegawai = async (peg) => {
-        const { collection, addDoc } = window.__fsHelpers;
-        const docRef = await addDoc(collection(window.__db, "pegawai"), peg);
+        if (!window.__db) throw new Error("Firebase tidak tersedia");
+        const docRef = await window.__db.collection("pegawai").add(peg);
         return { ...peg, _docId: docRef.id };
     };
 
     // Hapus pegawai dari Firestore
     const fsDeletePegawai = async (docId) => {
-        const { doc, deleteDoc } = window.__fsHelpers;
-        await deleteDoc(doc(window.__db, "pegawai", docId));
+        if (!window.__db) throw new Error("Firebase tidak tersedia");
+        await window.__db.collection("pegawai").doc(docId).delete();
     };
 
     // Seed default pegawai ke Firestore (hanya pertama kali)
     const fsSeedPegawai = async (list) => {
-        const { collection, addDoc } = window.__fsHelpers;
-        const col = collection(window.__db, "pegawai");
+        if (!window.__db) throw new Error("Firebase tidak tersedia");
         const results = [];
         for (const p of list) {
-            const docRef = await addDoc(col, p);
+            const docRef = await window.__db.collection("pegawai").add(p);
             results.push({ ...p, _docId: docRef.id });
         }
         return results;
@@ -534,6 +529,48 @@
         );
     };
 
+    // Multi-Select Dropdown — mirip DD tapi bisa pilih banyak
+    const DDMulti = ({ options, selectedIds, onChange, placeholder, width, label }) => {
+        const [open, setOpen] = useState(false);
+        const ref = useRef();
+        const listRef = useRef();
+        useEffect(() => {
+            const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+            document.addEventListener("mousedown", h);
+            return () => document.removeEventListener("mousedown", h);
+        }, []);
+        const toggle = (id) => {
+            onChange(selectedIds.includes(id) ? selectedIds.filter(x => x !== id) : [...selectedIds, id]);
+        };
+        const selCount = selectedIds.length;
+        const displayText = selCount === 0 ? (placeholder || "-- Pilih --") : selCount + " pegawai dipilih";
+        return React.createElement("div", { ref: ref, style: { position: "relative", display: "inline-block", width: width || "auto" } },
+            React.createElement("button", { type: "button", onClick: () => setOpen(o => !o), style: { display: "flex", alignItems: "center", gap: 6, fontSize: 13, padding: "7px 10px", borderRadius: 8, border: "1.5px solid #cbd5e1", background: "#fff", color: selCount > 0 ? "#1e293b" : "#94a3b8", cursor: "pointer", width: "100%", outline: "none" } },
+                React.createElement("svg", { width: 13, height: 13, viewBox: "0 0 24 24", fill: "none", stroke: selCount > 0 ? "#1d4ed8" : "#94a3b8", strokeWidth: 2 }, React.createElement("path", { d: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" }), React.createElement("circle", { cx: 9, cy: 7, r: 4 }), React.createElement("path", { d: "M23 21v-2a4 4 0 0 0-3-3.87" }), React.createElement("path", { d: "M16 3.13a4 4 0 0 1 0 7.75" })),
+                React.createElement("span", { style: { flex: 1, textAlign: "left", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: selCount > 0 ? 600 : 400 } }, displayText),
+                selCount > 0 && React.createElement("span", { style: { fontSize: 10, background: "#1d4ed8", color: "#fff", borderRadius: 10, padding: "1px 6px", fontWeight: 700, flexShrink: 0 } }, selCount),
+                React.createElement("span", { style: { fontSize: 9, color: "#94a3b8", flexShrink: 0 } }, open ? "▲" : "▼")
+            ),
+            open && React.createElement("div", { ref: listRef, style: { position: "absolute", top: "105%", left: 0, zIndex: 9999, background: "#fff", border: "1.5px solid #cbd5e1", borderRadius: 10, boxShadow: "0 6px 20px rgba(0,0,0,.15)", minWidth: "100%", maxHeight: 220, overflowY: "auto", padding: "3px 0" } },
+                options.length === 0
+                    ? React.createElement("div", { style: { padding: "12px 14px", fontSize: 12, color: "#94a3b8", textAlign: "center" } }, "Tidak ada pegawai lain di bidang ini")
+                    : options.map((o, i) => {
+                        const isChecked = selectedIds.includes(o.v);
+                        return React.createElement("div", {
+                            key: i,
+                            onMouseDown: e => { e.preventDefault(); toggle(o.v); },
+                            style: { padding: "8px 14px", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 9, color: isChecked ? "#1d4ed8" : "#374151", background: isChecked ? "#eff6ff" : "transparent", borderLeft: isChecked ? "3px solid #1d4ed8" : "3px solid transparent" }
+                        },
+                            React.createElement("div", { style: { width: 15, height: 15, borderRadius: 4, border: "1.5px solid " + (isChecked ? "#1d4ed8" : "#cbd5e1"), background: isChecked ? "#1d4ed8" : "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 } },
+                                isChecked && React.createElement("svg", { width: 9, height: 9, viewBox: "0 0 24 24", fill: "none", stroke: "#fff", strokeWidth: 3.5 }, React.createElement("polyline", { points: "20 6 9 17 4 12" }))
+                            ),
+                            React.createElement("span", { style: { fontWeight: isChecked ? 600 : 400 } }, o.l)
+                        );
+                    })
+            )
+        );
+    };
+
     // DatePicker Component
     const DP = ({ value, onChange, hasErr }) => {
         const [open, setOpen] = useState(false);
@@ -576,18 +613,18 @@
     };
 
     // Donut Chart untuk web
-    const DonutChart = ({ s, mi, ma }) => {
+    const DonutChart = ({ s, mi, sig, ma }) => {
         const ref = useRef();
         useEffect(() => {
             const c = ref.current; if (!c) return;
-            const ctx = c.getContext("2d"), total = s + mi + ma;
+            const ctx = c.getContext("2d"), total = s + mi + (sig||0) + ma;
             c.width = 160; c.height = 160;
             ctx.clearRect(0, 0, 160, 160);
             const cx = 80, cy = 80, r = 60, ir = 38;
             if (!total) { ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fillStyle = "#e2e8f0"; ctx.fill(); }
             else {
                 let ang = -Math.PI / 2;
-                [{ v: s, c: "#22c55e" }, { v: mi, c: "#f97316" }, { v: ma, c: "#ef4444" }].forEach(d => {
+                [{ v: s, c: "#22c55e" }, { v: mi, c: "#f97316" }, { v: sig||0, c: "#ea580c" }, { v: ma, c: "#ef4444" }].forEach(d => {
                     const sw = (d.v / total) * Math.PI * 2; if (!sw) return;
                     ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r, ang, ang + sw); ctx.closePath();
                     ctx.fillStyle = d.c; ctx.fill(); ang += sw;
@@ -597,7 +634,7 @@
             ctx.fillStyle = "#1e293b"; ctx.font = "bold 20px 'Segoe UI'"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
             ctx.fillText(String(total), cx, cy - 5);
             ctx.fillStyle = "#64748b"; ctx.font = "11px 'Segoe UI'"; ctx.fillText("Total", cx, cy + 13);
-        }, [s, mi, ma]);
+        }, [s, mi, sig, ma]);
         return React.createElement("canvas", { ref: ref, width: 160, height: 160, style: { maxWidth: 160 } });
     };
 
@@ -614,7 +651,7 @@
             ctx.scale(dpr, dpr);
             const pL = 38, pR = 12, pT = 20, pB = 40;
             const cW = W - pL - pR, cH = H - pT - pB;
-            const mx = Math.max(...monthly.map(m => m.s + m.mi + m.ma), 4);
+            const mx = Math.max(...monthly.map(m => m.s + m.mi + (m.sig||0) + m.ma), 4);
             const colW = cW / 12;
             const bW = Math.min(22, colW * 0.55);
             ctx.clearRect(0, 0, W, H);
@@ -635,14 +672,14 @@
             monthly.forEach((m, i) => {
                 const cx = pL + (i + 0.5) * colW;
                 let yBase = pT + cH;
-                [[m.s, "#22c55e"], [m.mi, "#f97316"], [m.ma, "#ef4444"]].forEach(([v, clr]) => {
+                [[m.s, "#22c55e"], [m.mi, "#f97316"], [m.sig||0, "#ea580c"], [m.ma, "#ef4444"]].forEach(([v, clr]) => {
                     if (!v) return;
                     const bh = (v / mx) * cH;
                     yBase -= bh;
                     ctx.fillStyle = clr;
                     ctx.fillRect(cx - bW / 2, yBase, bW, bh);
                 });
-                const tot = m.s + m.mi + m.ma;
+                const tot = m.s + m.mi + (m.sig||0) + m.ma;
                 if (tot > 0) {
                     ctx.fillStyle = "#1e293b";
                     ctx.font = "bold 10px 'Segoe UI'";
@@ -953,10 +990,12 @@
     };
     
     // Fungsi untuk menggambar legenda chart
-    const drawChartLegend = (doc, x, y, s, mi, ma, total) => {
+    const drawChartLegend = (doc, x, y, s, mi, ma, total, sig) => {
+        const sigVal = sig || 0;
         const items = [
             { label: "Satisfactory", value: s, r: 34, g: 197, b: 94, pct: total > 0 ? ((s/total)*100).toFixed(0) : 0 },
             { label: "Minor Finding", value: mi, r: 249, g: 115, b: 22, pct: total > 0 ? ((mi/total)*100).toFixed(0) : 0 },
+            { label: "Significant Finding", value: sigVal, r: 234, g: 88, b: 12, pct: total > 0 ? ((sigVal/total)*100).toFixed(0) : 0 },
             { label: "Major Finding", value: ma, r: 239, g: 68, b: 68, pct: total > 0 ? ((ma/total)*100).toFixed(0) : 0 }
         ];
         
@@ -1011,7 +1050,7 @@
         
         // Judul grafik dihapus
         
-        const maxVal = Math.max(...monthlyData.map(m => m.s + m.mi + m.ma), 1);
+        const maxVal = Math.max(...monthlyData.map(m => m.s + m.mi + (m.sig||0) + m.ma), 1);
         
         // Grid lines & Y-axis labels — setiap angka bulat dari 0 sampai maxVal
         for (let val = 0; val <= maxVal; val++) {
@@ -1032,14 +1071,14 @@
         monthlyData.forEach((m, idx) => {
             const cx = x + marginLeft + (idx + 0.5) * colWidth;
             const barX = cx - barWidth / 2;
-            const totalVal = m.s + m.mi + m.ma;
+            const totalVal = m.s + m.mi + (m.sig||0) + m.ma;
             if (totalVal === 0) {
                 doc.setFontSize(6);
                 doc.setTextColor(180, 190, 210);
                 doc.text("-", barX + barWidth / 2, y + marginTop + chartHeight - 2, { align: "center" });
             } else {
                 let currentY = y + marginTop + chartHeight;
-                [[m.s, 34, 197, 94], [m.mi, 249, 115, 22], [m.ma, 239, 68, 68]].forEach(([v, r, g, b]) => {
+                [[m.s, 34, 197, 94], [m.mi, 249, 115, 22], [m.sig||0, 234, 88, 12], [m.ma, 239, 68, 68]].forEach(([v, r, g, b]) => {
                     if (!v) return;
                     const bh = (v / maxVal) * chartHeight;
                     currentY -= bh;
@@ -1065,9 +1104,10 @@
         const legendItems = [
             { label: "Satisfactory", r: 34, g: 197, b: 94 },
             { label: "Minor Finding", r: 249, g: 115, b: 22 },
+            { label: "Significant Finding", r: 234, g: 88, b: 12 },
             { label: "Major Finding", r: 239, g: 68, b: 68 }
         ];
-        const legendSpacing = chartWidth / 3;
+        const legendSpacing = chartWidth / 4;
         legendItems.forEach((item, i) => {
             const lx = x + marginLeft + i * legendSpacing;
             doc.setFillColor(item.r, item.g, item.b);
@@ -1321,6 +1361,7 @@
                 
                 const totalS = cntS(recs, "Satisfactory");
                 const totalMi = cntS(recs, "Minor Finding");
+                const totalSig = cntS(recs, "Significant Finding");
                 const totalMa = cntS(recs, "Major Finding");
                 const totalAll = recs.length;
                 
@@ -1342,10 +1383,11 @@
                     { bg: [239, 246, 255], text: [29, 78, 216], label: "TOTAL INSPEKSI", value: totalAll },
                     { bg: [220, 252, 231], text: [22, 163, 74], label: "SATISFACTORY", value: totalS },
                     { bg: [255, 237, 213], text: [234, 88, 12], label: "MINOR FINDING", value: totalMi },
+                    { bg: [255, 231, 213], text: [180, 60, 10], label: "SIGNIFICANT", value: totalSig },
                     { bg: [254, 226, 226], text: [220, 38, 38], label: "MAJOR FINDING", value: totalMa }
                 ];
                 
-                const startX = (pageWidth - (boxW * 4 + 18)) / 2;
+                const startX = (pageWidth - (boxW * 5 + 24)) / 2;
                 statBoxes.forEach((c, idx) => {
                     const bx = startX + idx * (boxW + 6);
                     doc.setFillColor(c.bg[0], c.bg[1], c.bg[2]);
@@ -1377,7 +1419,7 @@
                         const barRightX = chartMargin * 2 + halfW;
                         const donutYOffset = y + (chartH - donutSz) / 4;
                         drawDonutChart(doc, donutOffX, donutYOffset, donutSz, totalS, totalMi, totalMa, totalAll);
-                        drawChartLegend(doc, legendXpos, donutYOffset + 4, totalS, totalMi, totalMa, totalAll);
+                        drawChartLegend(doc, legendXpos, donutYOffset + 4, totalS, totalMi, totalMa, totalAll, totalSig);
                         drawBarChart(doc, barRightX, y, halfW, chartH, monthlyData, "Data Grafik " + tahun);
                     } else {
                         const donutSize = 55;
@@ -1385,7 +1427,7 @@
                         const totalWidth = donutSize + legendW + 20;
                         const startChartX = (pageWidth - totalWidth) / 2;
                         drawDonutChart(doc, startChartX, y, donutSize, totalS, totalMi, totalMa, totalAll);
-                        drawChartLegend(doc, startChartX + donutSize + 12, y + 4, totalS, totalMi, totalMa, totalAll);
+                        drawChartLegend(doc, startChartX + donutSize + 12, y + 4, totalS, totalMi, totalMa, totalAll, totalSig);
                     }
                 }
                 
@@ -1395,6 +1437,7 @@
                     const bandaraRecs = recs.filter(r => r.bandara === bandara);
                     const bandaraS = cntS(bandaraRecs, "Satisfactory");
                     const bandaraMi = cntS(bandaraRecs, "Minor Finding");
+                    const bandaraSig = cntS(bandaraRecs, "Significant Finding");
                     const bandaraMa = cntS(bandaraRecs, "Major Finding");
                     const bandaraTotal = bandaraRecs.length;
                     
@@ -1416,11 +1459,12 @@
                     yPos += 14;
                     
                     const miniBoxW = 42;
-                    const miniStartX = (pageWidth - (miniBoxW * 4 + 18)) / 2;
+                    const miniStartX = (pageWidth - (miniBoxW * 5 + 24)) / 2;
                     const miniBoxes = [
                         { bg: [239, 246, 255], text: [29, 78, 216], label: "TOTAL", value: bandaraTotal },
                         { bg: [220, 252, 231], text: [22, 163, 74], label: "SATISFACTORY", value: bandaraS },
                         { bg: [255, 237, 213], text: [234, 88, 12], label: "MINOR", value: bandaraMi },
+                        { bg: [255, 231, 213], text: [180, 60, 10], label: "SIGNIFICANT", value: bandaraSig },
                         { bg: [254, 226, 226], text: [220, 38, 38], label: "MAJOR", value: bandaraMa }
                     ];
                     miniBoxes.forEach((box, bIdx2) => {
@@ -1445,7 +1489,7 @@
                     const totalChartWR = donutSzR + legendWidR + 20;
                     const startChartXR = (pageWidth - totalChartWR) / 2;
                     drawDonutChart(doc, startChartXR, yPos, donutSzR, bandaraS, bandaraMi, bandaraMa, bandaraTotal);
-                    drawChartLegend(doc, startChartXR + donutSzR + 12, yPos + 6, bandaraS, bandaraMi, bandaraMa, bandaraTotal);
+                    drawChartLegend(doc, startChartXR + donutSzR + 12, yPos + 6, bandaraS, bandaraMi, bandaraMa, bandaraTotal, bandaraSig);
                 }
                 
                 // Halaman terakhir: tabel data per maskapai
@@ -1490,6 +1534,7 @@
                 
                 const totalS = cntS(recs, "Satisfactory");
                 const totalMi = cntS(recs, "Minor Finding");
+                const totalSig = cntS(recs, "Significant Finding");
                 const totalMa = cntS(recs, "Major Finding");
                 const totalAll = recs.length;
                 
@@ -1510,31 +1555,35 @@
                     { bg: [239, 246, 255], text: [29, 78, 216], label: "TOTAL INSPEKSI", value: totalAll },
                     { bg: [220, 252, 231], text: [22, 163, 74], label: "SATISFACTORY", value: totalS },
                     { bg: [255, 237, 213], text: [234, 88, 12], label: "MINOR FINDING", value: totalMi },
+                    { bg: [255, 231, 213], text: [180, 60, 10], label: "SIGNIFICANT", value: totalSig },
                     { bg: [254, 226, 226], text: [220, 38, 38], label: "MAJOR FINDING", value: totalMa }
                 ];
                 
                 const ML_margin = 10;
-                const startX = (pageWidth - (boxW * 4 + 18)) / 2;
+                const boxGap = 3;
+                const smallBoxW = 30;
+                const totalBoxW = smallBoxW * 5 + boxGap * 4;
+                const startX = pageWidth - ML_margin - totalBoxW;
                 statBoxes.forEach((c, idx) => {
-                    const bx = startX + idx * (boxW + 6);
+                    const bx = startX + idx * (smallBoxW + boxGap);
                     doc.setFillColor(c.bg[0], c.bg[1], c.bg[2]);
-                    doc.roundedRect(bx, y, boxW, 28, 3, 3, "F");
+                    doc.roundedRect(bx, y, smallBoxW, 28, 3, 3, "F");
                     doc.setDrawColor(c.text[0], c.text[1], c.text[2]);
                     doc.setLineWidth(0.4);
-                    doc.roundedRect(bx, y, boxW, 28, 3, 3, "S");
+                    doc.roundedRect(bx, y, smallBoxW, 28, 3, 3, "S");
                     doc.setTextColor(c.text[0], c.text[1], c.text[2]);
-                    doc.setFontSize(22);
+                    doc.setFontSize(20);
                     doc.setFont("helvetica", "bold");
-                    doc.text(String(c.value), bx + boxW / 2, y + 16, { align: "center" });
-                    doc.setFontSize(5.5);
+                    doc.text(String(c.value), bx + smallBoxW / 2, y + 15, { align: "center" });
+                    doc.setFontSize(4.5);
                     doc.setFont("helvetica", "normal");
-                    doc.text(c.label, bx + boxW / 2, y + 24, { align: "center" });
+                    doc.text(c.label, bx + smallBoxW / 2, y + 24, { align: "center" });
                 });
 
                 // ── Nama & Jabatan: rata kiri, sejajar baris kotak statistik ──
                 {
                     const nbX    = ML_margin;
-                    const nbMaxW = startX - ML_margin - 8;   // berhenti sebelum kotak stats
+                    const nbMaxW = startX - ML_margin - 6;   // berhenti sebelum kotak stats
 
                     // Set font jabatan DULU sebelum splitTextToSize agar baris akurat
                     doc.setFontSize(10);
@@ -1592,7 +1641,7 @@
                         const barRightX = chartMargin * 2 + halfW;
                         const donutYOffset = y + (chartH - donutSz) / 4;
                         drawDonutChart(doc, donutOffX, donutYOffset, donutSz, totalS, totalMi, totalMa, totalAll);
-                        drawChartLegend(doc, legendXpos, donutYOffset + 4, totalS, totalMi, totalMa, totalAll);
+                        drawChartLegend(doc, legendXpos, donutYOffset + 4, totalS, totalMi, totalMa, totalAll, totalSig);
                         drawBarChart(doc, barRightX, y, halfW, chartH, monthlyData, "Data Grafik " + tahun);
                     } else {
                         const donutSize = 55;
@@ -1600,7 +1649,7 @@
                         const totalWidth = donutSize + legendW + 20;
                         const startChartX = (pageWidth - totalWidth) / 2;
                         drawDonutChart(doc, startChartX, y, donutSize, totalS, totalMi, totalMa, totalAll);
-                        drawChartLegend(doc, startChartX + donutSize + 12, y + 4, totalS, totalMi, totalMa, totalAll);
+                        drawChartLegend(doc, startChartX + donutSize + 12, y + 4, totalS, totalMi, totalMa, totalAll, totalSig);
                     }
                 }
                 
@@ -1610,6 +1659,7 @@
                     const bandaraRecs = recs.filter(r => r.bandara === bandara);
                     const bandaraS = cntS(bandaraRecs, "Satisfactory");
                     const bandaraMi = cntS(bandaraRecs, "Minor Finding");
+                    const bandaraSig = cntS(bandaraRecs, "Significant Finding");
                     const bandaraMa = cntS(bandaraRecs, "Major Finding");
                     const bandaraTotal = bandaraRecs.length;
                     
@@ -1633,11 +1683,12 @@
                     
                     // Mini statistik
                     const miniBoxW = 42;
-                    const miniStartX = (pageWidth - (miniBoxW * 4 + 18)) / 2;
+                    const miniStartX = (pageWidth - (miniBoxW * 5 + 24)) / 2;
                     const miniBoxes = [
                         { bg: [239, 246, 255], text: [29, 78, 216], label: "TOTAL", value: bandaraTotal },
                         { bg: [220, 252, 231], text: [22, 163, 74], label: "SATISFACTORY", value: bandaraS },
                         { bg: [255, 237, 213], text: [234, 88, 12], label: "MINOR", value: bandaraMi },
+                        { bg: [255, 231, 213], text: [180, 60, 10], label: "SIGNIFICANT", value: bandaraSig },
                         { bg: [254, 226, 226], text: [220, 38, 38], label: "MAJOR", value: bandaraMa }
                     ];
                     
@@ -1668,7 +1719,7 @@
                     const legendX = donutX + donutSz + 12;
                     
                     drawDonutChart(doc, donutX, yPos, donutSz, bandaraS, bandaraMi, bandaraMa, bandaraTotal);
-                    drawChartLegend(doc, legendX, yPos + 6, bandaraS, bandaraMi, bandaraMa, bandaraTotal);
+                    drawChartLegend(doc, legendX, yPos + 6, bandaraS, bandaraMi, bandaraMa, bandaraTotal, bandaraSig);
                 }
                 
                 // Halaman terakhir: tabel data per maskapai
@@ -1700,7 +1751,7 @@
     
     // Untuk kelengkapan, saya sertakan komponen yang diperlukan namun disederhanakan
     
-    const InspeksiForm = ({ selPeg, onSave, existingRecords }) => {
+    const InspeksiForm = ({ selPeg, onSave, existingRecords, pegawaiList }) => {
         const [spt, setSpt] = useState("");
         const [tgl, setTgl] = useState("");
         const [msk, setMsk] = useState("");
@@ -1716,13 +1767,17 @@
         const [flightTo, setFlightTo] = useState("");
         const [serialNum, setSerialNum] = useState("");
         const [stat, setStat] = useState("Satisfactory");
-        const [statExtra, setStatExtra] = useState(""); // "" | "Minor Finding" | "Major Finding" — untuk kombinasi
+        const [statExtra, setStatExtra] = useState(""); // "" | "Minor Finding" | "Significant Finding" | "Major Finding"
         const [temuan, setTemuan] = useState("");
         const [temuanExtra, setTemuanExtra] = useState(""); // temuan untuk statExtra
         const [desk, setDesk] = useState("");
         const [errors, setErrors] = useState({});
         const [warn, setWarn] = useState(false);
         const [dupWarning, setDupWarning] = useState("");
+        const [taggedIds, setTaggedIds] = useState([]); // IDs pegawai yang di-tag
+        
+        // Pegawai yang bisa di-tag: bidang sama, bukan diri sendiri
+        const sameBidangPegs = (pegawaiList || []).filter(p => p.bidang === selPeg.bidang && p.id !== selPeg.id);
         
         const handleSubmit = () => {
             const finalTipe = tipe === "Lainnya" ? tipeCus.trim() : tipe;
@@ -1739,7 +1794,7 @@
             if (!flightTo.trim()) err.flightTo = 1;
             if (!serialNum.trim()) err.serialNum = 1;
             if (!desk.trim()) err.desk = 1;
-            if ((stat === "Minor Finding" || stat === "Major Finding") && !temuan.trim()) err.temuan = 1;
+                        if ((stat === "Minor Finding" || stat === "Significant Finding" || stat === "Major Finding") && !temuan.trim()) err.temuan = 1;
             if (statExtra && !temuanExtra.trim()) err.temuanExtra = 1;
             if (Object.keys(err).length) { setErrors(err); setWarn(true); return; }
             
@@ -1748,8 +1803,9 @@
             let finalTemuanList = stat !== "Satisfactory" ? temuan.split("\n").filter(l => l.trim()) : [];
             let finalTemuan = temuan;
             if (statExtra) {
-                // Jika ada dua status, prioritas: Major > Minor
-                finalStat = (stat === "Major Finding" || statExtra === "Major Finding") ? "Major Finding" : "Minor Finding";
+                // Jika ada dua status, prioritas: Major > Significant > Minor
+                const priority = { "Major Finding": 3, "Significant Finding": 2, "Minor Finding": 1, "Satisfactory": 0 };
+                finalStat = priority[stat] >= priority[statExtra] ? stat : statExtra;
                 const extraLines = temuanExtra.split("\n").filter(l => l.trim());
                 finalTemuanList = [...finalTemuanList, ...extraLines];
                 finalTemuan = temuan + (temuanExtra ? "\n" + temuanExtra : "");
@@ -1773,6 +1829,8 @@
                 temuanList: finalTemuanList,
                 deskripsi: desk.trim(),
                 pegawaiId: selPeg.id,
+                taggedBy: selPeg.id,
+                taggedPegawaiIds: taggedIds,
                 ts: Date.now()
             };
             
@@ -1784,7 +1842,16 @@
             }
             
             setDupWarning("");
+            // Simpan record utama
             onSave(newRecord);
+            // Simpan salinan untuk setiap pegawai yang di-tag, cek duplikat masing-masing
+            const baseTs = Date.now();
+            taggedIds.forEach((tid, idx) => {
+                const taggedRecord = { ...newRecord, pegawaiId: tid, ts: baseTs + idx + 1 };
+                if (!isDuplicateForPegawai(existingRecords, tid, taggedRecord)) {
+                    onSave(taggedRecord);
+                }
+            });
         };
         
         const inputStyle = (err) => ({ fontSize: 13, padding: "7px 10px", borderRadius: 7, border: err ? "2px solid #ef4444" : "1.5px solid #cbd5e1", background: err ? "#fff5f5" : "#fff", width: "100%", boxSizing: "border-box", color: "#1e293b", caretColor: "#000" });
@@ -1812,13 +1879,16 @@
                     React.createElement("div", { style: { fontSize: 11, color: "#64748b", marginBottom: 4, fontWeight: 600 } }, "Hasil Inspeksi ", React.createElement("span", { style: { color: "#ef4444" } }, "*")), 
                     React.createElement("div", { style: { position: "relative", display: "flex", alignItems: "stretch" } },
                         React.createElement("div", { style: { flex: 1, minWidth: 0 } },
-                            React.createElement(DD, { options: [{ v: "Satisfactory", l: "Satisfactory" }, { v: "Minor Finding", l: "Minor Finding" }, { v: "Major Finding", l: "Major Finding" }], value: stat, onChange: v => { setStat(v); setStatExtra(""); setTemuanExtra(""); }, width: "100%" })
+                            React.createElement(DD, { options: [{ v: "Satisfactory", l: "Satisfactory" }, { v: "Minor Finding", l: "Minor Finding" }, { v: "Significant Finding", l: "Significant Finding" }, { v: "Major Finding", l: "Major Finding" }], value: stat, onChange: v => { setStat(v); setStatExtra(""); setTemuanExtra(""); }, width: "100%" })
                         ),
-                        (stat === "Minor Finding" || stat === "Major Finding") && !statExtra &&
+                        (stat === "Minor Finding" || stat === "Significant Finding" || stat === "Major Finding") && !statExtra &&
                             React.createElement("button", { 
                                 type: "button",
                                 title: "Tambah temuan jenis lain",
-                                onClick: () => setStatExtra(stat === "Minor Finding" ? "Major Finding" : "Minor Finding"),
+                                onClick: () => {
+                                    const nextMap = { "Minor Finding": "Significant Finding", "Significant Finding": "Major Finding", "Major Finding": "Minor Finding" };
+                                    setStatExtra(nextMap[stat] || "Minor Finding");
+                                },
                                 style: { flexShrink: 0, marginLeft: 6, width: 34, borderRadius: 8, border: "1.5px solid #1d4ed8", background: "#eff6ff", color: "#1d4ed8", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }
                             }, React.createElement("svg", { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "#1d4ed8", strokeWidth: 2.5, strokeLinecap: "round" },
                                 React.createElement("line", { x1: 12, y1: 4, x2: 12, y2: 20 }),
@@ -1826,7 +1896,7 @@
                             ))
                     )
                 ),
-                (stat === "Minor Finding" || stat === "Major Finding") && React.createElement("div", { style: { gridColumn: "1/-1" } },
+                (stat === "Minor Finding" || stat === "Significant Finding" || stat === "Major Finding") && React.createElement("div", { style: { gridColumn: "1/-1" } },
                     React.createElement("div", { style: { fontSize: 11, color: "#64748b", marginBottom: 4, fontWeight: 600 } }, 
                         "Detail Temuan — ", React.createElement("span", { style: { color: stat === "Major Finding" ? "#ef4444" : "#f97316", fontWeight: 700 } }, stat),
                         " ", React.createElement("span", { style: { color: "#ef4444" } }, "*")
@@ -1849,6 +1919,20 @@
                     ),
                     React.createElement("textarea", { value: temuanExtra, onChange: e => setTemuanExtra(e.target.value), placeholder: "Tulis setiap temuan di baris terpisah...", style: { ...inputStyle(errors.temuanExtra), resize: "vertical", minHeight: 65 } }),
                     errors.temuanExtra && React.createElement("div", { style: { color: "#ef4444", fontSize: 10, marginTop: 3 } }, "Wajib diisi")
+                ),
+                React.createElement("div", { style: { gridColumn: "1/-1" } },
+                    React.createElement("div", { style: { fontSize: 11, color: "#64748b", marginBottom: 4, fontWeight: 600 } }, "Tambah Pegawai - Bidang " + selPeg.bidang, React.createElement("span", { style: { color: "#94a3b8", fontWeight: 400, fontSize: 10 } }, "(Data Akan Tersimpan Pada Pegawai yang Dipilih)")),
+                    React.createElement("div", {},
+                        React.createElement(DDMulti, {
+                            options: sameBidangPegs.map(p => ({ v: p.id, l: p.nama })),
+                            selectedIds: taggedIds,
+                            onChange: v => { setTaggedIds(v); if (v.length > 0) setErrors(prev => ({ ...prev, taggedIds: 0 })); },
+                            placeholder: "-- Pilih Pegawai --",
+                            width: "100%"
+                        })
+                    ),
+                    
+                    taggedIds.length > 0 && React.createElement("div", { style: { marginTop: 5, fontSize: 11, color: "#22c55e", fontWeight: 600 } }, "✓ " + taggedIds.length + " Pegawai Ditambahkan Pada Laporan")
                 ),
                 React.createElement("div", { style: { gridColumn: "1/-1" } },
                     React.createElement("div", { style: { fontSize: 11, color: "#64748b", marginBottom: 4, fontWeight: 600 } }, "Deskripsi Pekerjaan ", React.createElement("span", { style: { color: "#ef4444" } }, "*")),
@@ -2227,16 +2311,21 @@
 
         // ── Load data dari Firestore saat pertama kali ──
         useEffect(() => {
-            waitFirebase(async () => {
+            const loadData = async () => {
+                if (!window.__firebaseReady || !window.__db) {
+                    // Firebase gagal init — langsung pakai localStorage
+                    setFbError("Firebase tidak dapat terhubung. Menggunakan data lokal.");
+                    setRecords(lsLoad());
+                    setPegawaiList(sortPegawaiByJabatan(PEGAWAI));
+                    setLoading(false);
+                    return;
+                }
                 try {
-                    // Load records
                     const recs = await fsLoadRecords();
                     setRecords(recs);
 
-                    // Load pegawai
                     const pegs = await fsLoadPegawai();
                     if (pegs === null) {
-                        // Pertama kali: seed dari PEGAWAI default
                         const seeded = await fsSeedPegawai(sortPegawaiByJabatan(PEGAWAI));
                         setPegawaiList(seeded);
                     } else {
@@ -2244,14 +2333,14 @@
                     }
                 } catch(e) {
                     console.error("Firebase load error:", e);
-                    setFbError("Gagal terhubung ke database. Pastikan koneksi internet aktif dan Firebase sudah dikonfigurasi dengan benar.");
-                    // Fallback ke localStorage
+                    setFbError("Gagal memuat dari database (" + (e.message || "error") + "). Menggunakan data lokal.");
                     setRecords(lsLoad());
                     setPegawaiList(sortPegawaiByJabatan(PEGAWAI));
                 } finally {
                     setLoading(false);
                 }
-            });
+            };
+            loadData();
         }, []);
 
         // Sinkronisasi records ke localStorage sebagai cache offline ringan
@@ -2265,12 +2354,12 @@
         
         const monthlyAll = useMemo(() => BULAN.map((_, m) => { 
             const mr = filterR(globalUR, String(m + 1), rkYr, rkBdr); 
-            return { s: cntS(mr, "Satisfactory"), mi: cntS(mr, "Minor Finding"), ma: cntS(mr, "Major Finding") }; 
+            return { s: cntS(mr, "Satisfactory"), mi: cntS(mr, "Minor Finding"), sig: cntS(mr, "Significant Finding"), ma: cntS(mr, "Major Finding") }; 
         }), [globalUR, rkYr, rkBdr]);
         
         const monthlyPeg = useMemo(() => BULAN.map((_, m) => { 
             const mr = filterR(records.filter(r => r.pegawaiId === (selPeg?.id)), String(m + 1), pfYr, pfBdr); 
-            return { s: cntS(mr, "Satisfactory"), mi: cntS(mr, "Minor Finding"), ma: cntS(mr, "Major Finding") }; 
+            return { s: cntS(mr, "Satisfactory"), mi: cntS(mr, "Minor Finding"), sig: cntS(mr, "Significant Finding"), ma: cntS(mr, "Major Finding") }; 
         }), [records, selPeg, pfYr, pfBdr]);
 
         const addPegawai = useCallback(async (peg) => {
@@ -2315,9 +2404,28 @@
         
         const delRecord = useCallback(async (ts) => {
             const rec = records.find(r => r.ts === ts);
+            if (!rec) return;
+            // Cari semua record dalam grup yang sama:
+            // - record milik pengisi asli (taggedBy sama, pegawaiId == taggedBy)
+            // - record milik semua pegawai yang di-tag (taggedBy sama)
+            const groupKey = rec.taggedBy || rec.pegawaiId;
+            const allTaggedIds = rec.taggedPegawaiIds || [];
+            const allPegawaiIds = new Set([groupKey, ...allTaggedIds]);
+            const groupRecords = records.filter(r => {
+                const rGroupKey = r.taggedBy || r.pegawaiId;
+                return rGroupKey === groupKey &&
+                    allPegawaiIds.has(r.pegawaiId) &&
+                    r.maskapai === rec.maskapai &&
+                    r.tanggal === rec.tanggal &&
+                    r.registrasi === rec.registrasi &&
+                    r.bandara === rec.bandara;
+            });
             try {
-                if (rec && rec._docId) await fsDeleteRecord(rec._docId);
-                setRecords(prev => prev.filter(r => r.ts !== ts));
+                for (const gr of groupRecords) {
+                    if (gr._docId) await fsDeleteRecord(gr._docId);
+                }
+                const deletedTs = new Set(groupRecords.map(r => r.ts));
+                setRecords(prev => prev.filter(r => !deletedTs.has(r.ts)));
                 setDelTgt(null);
                 if (view === "detail") setView("profil");
             } catch(e) {
@@ -2346,11 +2454,12 @@
 
         // Komponen stat grid
         const StatGrid = ({ recs }) => {
-            const s = cntS(recs, "Satisfactory"), mi = cntS(recs, "Minor Finding"), ma = cntS(recs, "Major Finding");
+            const s = cntS(recs, "Satisfactory"), mi = cntS(recs, "Minor Finding"), sig = cntS(recs, "Significant Finding"), ma = cntS(recs, "Major Finding");
             return React.createElement("div", { className: "stat-grid" },
                 [{ l: "Total Inspeksi", v: recs.length, c: "#1d4ed8", bg: "#eff6ff", bo: "#bfdbfe", icon: "📋" },
                  { l: "Satisfactory", v: s, c: "#22c55e", bg: "#dcfce7", bo: "#86efac", icon: "✅" },
                  { l: "Minor Finding", v: mi, c: "#f97316", bg: "#fff7ed", bo: "#fdba74", icon: "⚠️" },
+                 { l: "Significant Finding", v: sig, c: "#ea580c", bg: "#ffedd5", bo: "#fb923c", icon: "🔶" },
                  { l: "Major Finding", v: ma, c: "#ef4444", bg: "#fef2f2", bo: "#fecaca", icon: "🔴" }].map(it =>
                     React.createElement("div", { key: it.l, style: { background: it.bg, border: "1.5px solid " + it.bo, borderRadius: 10, padding: "12px 16px", position: "relative", overflow: "hidden" } },
                         React.createElement("div", { style: { position: "absolute", right: 10, top: 10, fontSize: 22, opacity: .18 } }, it.icon),
@@ -2434,7 +2543,7 @@
                             React.createElement("div", { className: "pegawai-grid" },
                                 sortPegawaiByJabatan(pegawaiList.filter(p => p.bidang === bid)).map(p => {
                                     const pr = filterR(perPegUR.filter(r => r.pegawaiId === p.id), dbBulan, dbYr, dbBdr);
-                                    const ps = cntS(pr, "Satisfactory"), pmi = cntS(pr, "Minor Finding"), pma = cntS(pr, "Major Finding");
+                                    const ps = cntS(pr, "Satisfactory"), pmi = cntS(pr, "Minor Finding"), psig = cntS(pr, "Significant Finding"), pma = cntS(pr, "Major Finding");
                                     const totalCount = pr.length;
                                     const shortName = truncateName(p.nama);
                                     return React.createElement("button", { key: p.id, onClick: () => openProfil(p), className: "card-hover", style: { background: "#fff", border: "1.5px solid #e2e8f0", borderRadius: 10, padding: 12, cursor: "pointer", textAlign: "left", display: "flex", flexDirection: "column", gap: 6, width: "100%", outline: "none", transition: "all .2s", boxShadow: "0 1px 3px rgba(0,0,0,.05)" } },
@@ -2452,6 +2561,7 @@
                                         React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 2 } },
                                             ps > 0 && React.createElement("span", { style: { background: "#dcfce7", color: "#22c55e", padding: "2px 8px", borderRadius: 12, fontSize: 9, fontWeight: 500 } }, "Satisfactory : " + ps),
                                             pmi > 0 && React.createElement("span", { style: { background: "#fff7ed", color: "#f97316", padding: "2px 8px", borderRadius: 12, fontSize: 9, fontWeight: 500 } }, "Minor : " + pmi),
+                                            psig > 0 && React.createElement("span", { style: { background: "#ffedd5", color: "#ea580c", padding: "2px 8px", borderRadius: 12, fontSize: 9, fontWeight: 500 } }, "Significant : " + psig),
                                             pma > 0 && React.createElement("span", { style: { background: "#fef2f2", color: "#ef4444", padding: "2px 8px", borderRadius: 12, fontSize: 9, fontWeight: 500 } }, "Major : " + pma)
                                         )
                                     );
@@ -2464,7 +2574,7 @@
         
         // Rekap View
         else if (view === "rekap") {
-            const s = cntS(rkRecs, "Satisfactory"), mi = cntS(rkRecs, "Minor Finding"), ma = cntS(rkRecs, "Major Finding");
+            const s = cntS(rkRecs, "Satisfactory"), mi = cntS(rkRecs, "Minor Finding"), sig = cntS(rkRecs, "Significant Finding"), ma = cntS(rkRecs, "Major Finding");
             mainContent = React.createElement(Main, null,
                     React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 } },
                         React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: "#1d4ed8", display: "flex", alignItems: "center", gap: 7 } },
@@ -2496,9 +2606,9 @@
                         React.createElement("div", { className: "rekap-chart-row" },
                             React.createElement("div", { className: rkBulan !== "Semua" ? "rekap-left-panel rekap-left-panel--centered" : "rekap-left-panel" },
                                 React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 18, flexWrap: "wrap" } },
-                                    React.createElement(DonutChart, { s: s, mi: mi, ma: ma }),
+                                    React.createElement(DonutChart, { s: s, mi: mi, sig: sig, ma: ma }),
                                     React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10 } },
-                                        [{ l: "Satisfactory", v: s, c: "#22c55e" }, { l: "Minor Finding", v: mi, c: "#f97316" }, { l: "Major Finding", v: ma, c: "#ef4444" }].map(({ l, v, c }) =>
+                                        [{ l: "Satisfactory", v: s, c: "#22c55e" }, { l: "Minor Finding", v: mi, c: "#f97316" }, { l: "Significant Finding", v: sig, c: "#ea580c" }, { l: "Major Finding", v: ma, c: "#ef4444" }].map(({ l, v, c }) =>
                                             React.createElement("div", { key: l, style: { display: "flex", alignItems: "center", gap: 10 } },
                                                 React.createElement("div", { style: { width: 13, height: 13, background: c, borderRadius: 3 } }),
                                                 React.createElement("span", { style: { fontSize: 13, color: "#374151", minWidth: 105 } }, l),
@@ -2552,7 +2662,7 @@
                             showForm ? React.createElement(React.Fragment, null, React.createElement("svg", { width: 13, height: 13, viewBox: "0 0 24 24", fill: "none", stroke: "#fff", strokeWidth: 2.5 }, React.createElement("line", { x1: 18, y1: 6, x2: 6, y2: 18 }), React.createElement("line", { x1: 6, y1: 6, x2: 18, y2: 18 })), " TUTUP") : React.createElement(React.Fragment, null, React.createElement("svg", { width: 13, height: 13, viewBox: "0 0 24 24", fill: "none", stroke: "#fff", strokeWidth: 2.5 }, React.createElement("line", { x1: 12, y1: 5, x2: 12, y2: 19 }), React.createElement("line", { x1: 5, y1: 12, x2: 19, y2: 12 })), " Input Inspeksi")
                         )
                     ),
-                    showForm && React.createElement(InspeksiForm, { selPeg: selPeg, onSave: addRecord, existingRecords: records }),
+                    showForm && React.createElement(InspeksiForm, { selPeg: selPeg, onSave: addRecord, existingRecords: records, pegawaiList: pegawaiList }),
                     React.createElement(StatGrid, { recs: pfRecs }),
                     React.createElement(Card, { style: { padding: "10px 14px" } },
                         React.createElement("div", { className: "filter-inner" },
@@ -2574,24 +2684,28 @@
                         React.createElement("div", { style: { overflowX: "auto", overflowY: "auto", maxHeight: 440, borderRadius: 10 } },
                             React.createElement("table", { style: { width: "100%", borderCollapse: "collapse", fontSize: 12 } },
                                 React.createElement("thead", null, React.createElement("tr", { style: { background: "#f8fafc", borderBottom: "2px solid #e2e8f0" } },
-                                    ["No", "No.SPT", "Tanggal", "Bandara", "Maskapai", "Serial No.", "Route From", "Flight No. From", "Route To", "Flight No. To", "Tipe", "Status", ""].map(h =>
+                                    ["No", "No.SPT", "Tanggal", "Bandara", "Maskapai", "Registrasi", "Serial No.", "Route From", "Flight No. From", "Route To", "Flight No. To", "Tipe", "Status", ""].map(h =>
                                         React.createElement("th", { key: h, style: { padding: "9px 12px", textAlign: "left", fontWeight: 700, fontSize: 11, color: "#64748b", whiteSpace: "nowrap", position: "sticky", top: 0, background: "#f8fafc", zIndex: 2, boxShadow: "0 2px 0 #e2e8f0" } }, h)
                                     )
                                 )),
                                 React.createElement("tbody", null,
-                                    pfRecs.length === 0 ? React.createElement("tr", null, React.createElement("td", { colSpan: 13, style: { padding: 24, textAlign: "center", color: "#94a3b8" } }, "Belum ada data inspeksi.")) :
-                                    pfRecs.map((r, i) => React.createElement("tr", { key: r.ts, style: { borderBottom: "1px solid #f1f5f9", background: i % 2 === 0 ? "#fff" : "#f8fafc" } },
+                                    pfRecs.length === 0 ? React.createElement("tr", null, React.createElement("td", { colSpan: 14, style: { padding: 24, textAlign: "center", color: "#94a3b8" } }, "Belum ada data inspeksi.")) :
+                                    pfRecs.map((r, i) => {
+                                        const taggedNames = (r.taggedPegawaiIds || []).map(tid => { const p = pegawaiList.find(x => x.id === tid); return p ? p.nama : null; }).filter(Boolean);
+                                        return React.createElement("tr", { key: r.ts, style: { borderBottom: "1px solid #f1f5f9", background: i % 2 === 0 ? "#fff" : "#f8fafc" } },
                                         React.createElement("td", { style: { padding: "8px 12px", color: "#94a3b8", fontWeight: 600 } }, i + 1),
                                         React.createElement("td", { style: { padding: "8px 12px", color: "#64748b", fontSize: 11 } }, r.nomorSPT || "-"),
                                         React.createElement("td", { style: { padding: "8px 12px", whiteSpace: "nowrap", fontWeight: 600 } }, r.tanggal),
                                         React.createElement("td", { style: { padding: "8px 12px", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, r.bandara),
                                         React.createElement("td", { style: { padding: "8px 12px", fontWeight: 600 } }, r.maskapai),
+                                        React.createElement("td", { style: { padding: "8px 12px", color: "#1d4ed8", fontWeight: 700 } }, r.registrasi || "-"),
                                         React.createElement("td", { style: { padding: "8px 12px", color: "#475569", fontWeight: 600 } }, r.aircraftSerialNumber || "-"),
                                         React.createElement("td", { style: { padding: "8px 12px", color: "#1d4ed8", fontWeight: 700 } }, r.routeFrom || "-"),
                                         React.createElement("td", { style: { padding: "8px 12px", color: "#475569" } }, r.flightNumberFrom || "-"),
                                         React.createElement("td", { style: { padding: "8px 12px", color: "#1d4ed8", fontWeight: 700 } }, r.routeTo || "-"),
                                         React.createElement("td", { style: { padding: "8px 12px", color: "#475569" } }, r.flightNumberTo || "-"),
                                         React.createElement("td", { style: { padding: "8px 12px" } }, r.tipePesawat),
+                                        
                                         React.createElement("td", { style: { padding: "8px 12px" } }, React.createElement(ScBadge, { status: r.status })),
                                         React.createElement("td", { style: { padding: "8px 10px" } },
                                             React.createElement("div", { style: { display: "flex", gap: 5 } },
@@ -2599,7 +2713,7 @@
                                                 React.createElement("button", { onClick: () => setDelTgt(r), style: { background: "#fef2f2", border: "none", cursor: "pointer", color: "#dc2626", padding: "5px 7px", borderRadius: 7, display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 600 } }, "🗑️ Hapus")
                                             )
                                         )
-                                    ))
+                                    )}))
                                 )
                             )
                         ),
@@ -2607,32 +2721,31 @@
                             "Scroll untuk lihat " + pfRecs.length + " data • Menampilkan semua " + pfRecs.length + " baris"
                         )
                     )
-            );
+            ;
         }
         
         // Detail View
         else if (view === "detail" && selIns) {
             const r = selIns;
             const ins = pegawaiList.find(p => p.id === r.pegawaiId);
+            const taggedPegsDetail = [ins, ...(r.taggedPegawaiIds || []).map(tid => pegawaiList.find(p => p.id === tid))].filter(Boolean).filter((p, i, a) => a.findIndex(x => x.id === p.id) === i).sort((a, b) => { const ra = getJabatanRank(a.jabatan), rb = getJabatanRank(b.jabatan); return ra !== rb ? ra - rb : a.nama.localeCompare(b.nama); });
             mainContent = React.createElement(Main, null,
                     delTgt && React.createElement(DelModal, { tgt: delTgt, onDel: delRecord, onClose: () => setDelTgt(null) }),
                     React.createElement("button", { onClick: () => setView("profil"), style: { display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, padding: "6px 16px", borderRadius: 9, border: "2px solid #1d4ed8", background: "#eff6ff", color: "#1d4ed8", cursor: "pointer", marginBottom: 12 } }, "← Profil"),
                     React.createElement(Card, null,
                         React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14, gap: 10 } },
                             React.createElement("div", null,
-                                React.createElement("div", { style: { fontSize: 11, color: "#94a3b8", fontWeight: 600 } }, "Laporan Ramp Inspection"),
-                                React.createElement("div", { style: { fontSize: 17, fontWeight: 800, marginTop: 2 } }, r.maskapai + (r.flightNumber ? " — " + r.flightNumber : ""))
+                                React.createElement("div", { style: { fontSize: 20, fontWeight: 800, color: "#1e293b" } }, "Laporan Ramp Inspection")
                             ),
                             React.createElement(ScBadge, { status: r.status })
                         ),
                         React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 20px", borderTop: "1px solid #f1f5f9", paddingTop: 12 } },
                             [
-                                ["Inspector", ins ? ins.nama : "-"],
                                 ["Nomor SPT", r.nomorSPT || "-"],
                                 ["Tanggal", r.tanggal],
                                 ["Bandara", r.bandara],
                                 ["Maskapai", r.maskapai],
-                                ["Registrasi", r.registrasi],
+                                ["Registrasi", r.registrasi || "-"],
                                 ["Tipe Pesawat", r.tipePesawat],
                                 ["Aircraft Serial Number", r.aircraftSerialNumber || "-"],
                                 ["Route From", r.routeFrom || "-"],
@@ -2646,11 +2759,27 @@
                                 )
                             )
                         ),
+                        React.createElement("div", { style: { marginTop: 14, borderTop: "1px solid #f1f5f9", paddingTop: 12 } },
+                            React.createElement("div", { style: { fontSize: 11, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 8 } }, "Daftar Pegawai"),
+                            React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 } },
+                                taggedPegsDetail.map(p => React.createElement("div", { key: p.id, style: { display: "flex", alignItems: "center", gap: 7, background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "5px 11px" } },
+                                    React.createElement("div", { style: { width: 24, height: 24, borderRadius: 6, background: "linear-gradient(135deg,#1d4ed8,#3b82f6)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 9, color: "#fff", flexShrink: 0 } }, ini(p.nama)),
+                                    React.createElement("div", null,
+                                        React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: "#1d4ed8" } }, p.nama),
+                                        React.createElement("div", { style: { fontSize: 10, color: "#64748b" } }, p.jabatan.length > 40 ? p.jabatan.substring(0, 40) + "..." : p.jabatan)
+                                    )
+                                ))
+                            )
+                        ),
                         (r.temuanList || []).length > 0 && React.createElement("div", { style: { marginTop: 14 } },
                             React.createElement("div", { style: { fontSize: 12, color: "#64748b", marginBottom: 6, fontWeight: 700 } }, "Detail Temuan"),
                             r.temuanList.map((t, i) => {
                                 const isMaj = r.status === "Major Finding";
-                                return React.createElement("div", { key: i, style: { background: isMaj ? "#fef2f2" : "#fffbeb", border: "1px solid " + (isMaj ? "#fecaca" : "#fde68a"), borderRadius: 7, padding: "7px 12px", marginBottom: 5, fontSize: 13, color: isMaj ? "#991b1b" : "#854d0e" } }, "— " + t);
+                                const isSig = r.status === "Significant Finding";
+                                const bgC = isMaj ? "#fef2f2" : isSig ? "#ffedd5" : "#fffbeb";
+                                const bdC = isMaj ? "#fecaca" : isSig ? "#fb923c" : "#fde68a";
+                                const txC = isMaj ? "#991b1b" : isSig ? "#9a3412" : "#854d0e";
+                                return React.createElement("div", { key: i, style: { background: bgC, border: "1px solid " + bdC, borderRadius: 7, padding: "7px 12px", marginBottom: 5, fontSize: 13, color: txC } }, "— " + t);
                             })
                         ),
                         r.deskripsi && React.createElement("div", { style: { marginTop: 14 } },
@@ -2677,21 +2806,18 @@
             );
         }
 
-        // Error screen
-        if (fbError) {
-            return React.createElement("div", { style: { fontFamily: "'Segoe UI',system-ui,sans-serif", background: "#f1f5f9", minHeight: "100vh", color: "#1e293b", display: "flex", flexDirection: "column" } },
-                React.createElement(Header, { view: view, setView: setView }),
-                React.createElement("div", { style: { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: 24 } },
-                    React.createElement("div", { style: { fontSize: 40 } }, "⚠️"),
-                    React.createElement("div", { style: { fontSize: 15, color: "#dc2626", fontWeight: 700, textAlign: "center", maxWidth: 480 } }, fbError),
-                    React.createElement("div", { style: { fontSize: 12, color: "#64748b", textAlign: "center", maxWidth: 480 } }, "Data ditampilkan dari cache lokal. Beberapa fitur mungkin tidak berfungsi penuh."),
-                    React.createElement("button", { onClick: () => window.location.reload(), style: { fontSize: 13, padding: "8px 22px", borderRadius: 8, border: "none", background: "#1d4ed8", color: "#fff", cursor: "pointer", fontWeight: 700 } }, "🔄 Coba Lagi")
-                )
-            );
-        }
-        
         return React.createElement("div", { style: { fontFamily: "'Segoe UI',system-ui,sans-serif", background: "#f1f5f9", minHeight: "100vh", color: "#1e293b" } },
             React.createElement(Header, { view: view, setView: setView }),
+            fbError && React.createElement("div", { style: { background: "#fffbeb", borderBottom: "2px solid #f59e0b", padding: "10px 20px", display: "flex", alignItems: "center", gap: 12, justifyContent: "space-between", flexWrap: "wrap" } },
+                React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#92400e" } },
+                    React.createElement("span", null, "⚠️"),
+                    React.createElement("span", null, fbError + " Data lokal ditampilkan.")
+                ),
+                React.createElement("div", { style: { display: "flex", gap: 8 } },
+                    React.createElement("button", { onClick: () => window.location.reload(), style: { fontSize: 11, padding: "4px 14px", borderRadius: 6, border: "1.5px solid #d97706", background: "#fef3c7", color: "#92400e", cursor: "pointer", fontWeight: 700 } }, "🔄 Coba Lagi"),
+                    React.createElement("button", { onClick: () => setFbError(null), style: { fontSize: 11, padding: "4px 14px", borderRadius: 6, border: "1.5px solid #cbd5e1", background: "#fff", color: "#374151", cursor: "pointer" } }, "✕")
+                )
+            ),
             mainContent
         );
     };
@@ -2699,5 +2825,10 @@
     const root = ReactDOM.createRoot(document.getElementById("root"));
     root.render(React.createElement(App));
 </script>
+<div style="position:fixed;bottom:12px;right:16px;z-index:9999;text-align:right;pointer-events:none;user-select:none;">
+  <span style="font-size:9px;color:rgba(100,116,139,0.45);font-family:'Segoe UI',system-ui,sans-serif;line-height:1.4;">
+    Created by<br><span style="font-size:10px;font-weight:600;color:rgba(100,116,139,0.5);">Rangga Wiradarma</span>
+  </span>
+</div>
 </body>
 </html>
